@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>URCA! Live - Workshop Engine V8 (Stable)</title>
+  <title>URCA! Live - Workshop Engine V8 (Anti-Crash)</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -23,7 +23,32 @@
     .retro-shadow { box-shadow: 6px 6px 0px 0px #1A1A1A; }
     .retro-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0px 0px #1A1A1A; }
     
-    .aspect-card { aspect-ratio: 63 / 88; width: 100%; max-width: 320px; }
+    .aspect-card { aspect-ratio: 63 / 88; width: min(100%, 340px); max-width: 340px; }
+    .team-stage { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; justify-items: center; gap: 1rem; padding: 1rem; padding-bottom: 9.5rem; }
+    .team-card-shell { width: 100%; max-width: 360px; margin-inline: auto; }
+    .team-dock { position: fixed; left: 50%; bottom: max(12px, env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(calc(100% - 24px), 780px); background: rgba(255,255,255,.96); backdrop-filter: blur(12px); border: 4px solid #1A1A1A; border-radius: 24px; padding: .75rem; z-index: 40; box-shadow: 0 -10px 22px rgba(0,0,0,.08); }
+    .team-dock.is-empty { display: none !important; }
+    .team-action-row { display: flex; gap: .5rem; justify-content: center; }
+    .team-action-row > button { max-width: 280px; }
+    .sos-fab { position: fixed !important; right: max(14px, env(safe-area-inset-right)) !important; bottom: max(14px, env(safe-area-inset-bottom)) !important; width: 58px; height: 58px; border-radius: 999px; z-index: 90; display: flex; align-items: center; justify-content: center; padding: 0; }
+    .sos-fab-label { display: none; }
+    @media (min-width: 768px) {
+      .team-stage { grid-template-columns: repeat(2, minmax(300px, 380px)); justify-content: center; align-content: start; gap: 2rem; padding: 2rem; padding-bottom: 8.5rem; }
+      .team-card-shell { max-width: 380px; }
+      .aspect-card { width: min(100%, 360px); max-width: 360px; }
+      .team-ctx-compact.has-active { transform: none; opacity: 1; }
+      .sos-fab { width: auto; min-width: 116px; height: 56px; padding-inline: 1rem; border-radius: 18px; }
+      .sos-fab-label { display: inline; }
+    }
+    @media (max-width: 640px) {
+      .aspect-card { width: min(90vw, 292px); max-width: 292px; }
+      .team-stage { padding: .75rem; padding-bottom: 9.75rem; gap: .9rem; }
+      .team-card-shell { max-width: 330px; }
+      .team-ctx-compact.has-active { transform: scale(.94); transform-origin: top center; opacity: .86; margin-bottom: -.65rem; }
+      .team-ctx-compact.has-active .aspect-card { width: min(84vw, 252px); }
+      .team-dock { width: min(calc(100% - 22px), 520px); padding: .6rem; border-radius: 20px; }
+      .team-action-row > button { padding: .8rem .65rem; font-size: .74rem; }
+    }
     .card-perspective { perspective: 1200px; }
     .card-inner { width: 100%; height: 100%; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); transform-style: preserve-3d; position: relative; }
     .card-inner.flipped { transform: rotateY(180deg); }
@@ -44,7 +69,7 @@
     .scanlines::before { content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); z-index: 201; background-size: 100% 4px, 6px 100%; pointer-events: none; }
   </style>
 </head>
-<body class="font-sans text-[#1A1A1A] bg-[#1A1A1A] w-full h-[100dvh] overflow-hidden select-none relative">
+<body class="font-sans text-[#1A1A1A] bg-[#FDFBF7] w-full min-h-[100dvh] overflow-hidden select-none relative">
 
   <div id="view-admin" class="hidden absolute inset-0 bg-[#FDFBF7] flex-col md:flex-row z-10">
     <div id="admin-toasts" class="fixed top-4 right-4 z-[999] flex flex-col gap-2"></div>
@@ -78,6 +103,11 @@
         </div>
       </div>
 
+      <div class="bg-purple-50 retro-border rounded-xl p-3 space-y-2 hidden">
+        <input type="text" id="sb-url" class="hidden">
+        <input type="password" id="sb-key" class="hidden">
+      </div>
+
       <div class="bg-gray-50 retro-border rounded-xl p-3 flex flex-col gap-2">
         <h4 class="font-display font-bold text-[10px] text-gray-800 uppercase flex justify-between items-center"><span>👥 Generatore Tavoli</span></h4>
         <div class="flex flex-col gap-1.5 mt-1">
@@ -87,7 +117,8 @@
             <option value="van">2. Van (Outdoor)</option>
             <option value="salute">3. Care (Salute)</option>
           </select>
-          <button onclick="adminAddTable()" class="w-full bg-[#1A1A1A] text-white font-display text-[10px] font-bold py-1.5 rounded border border-[#1A1A1A] retro-btn">➕ AGGIUNGI TAVOLO</button>
+          <button onclick="adminAddTable()" class="w-full bg-[#1A1A1A] text-white font-display text-[10px] font-bold py-1.5 rounded border border-[#1A1A1A] retro-btn hover:bg-gray-800">➕ AGGIUNGI TAVOLO</button>
+          <button onclick="adminResetSession()" class="w-full bg-white text-[#FF5A36] font-display text-[10px] font-bold py-1.5 rounded border-2 border-[#FF5A36] retro-btn hover:bg-red-50">🧹 AZZERA SESSIONE</button>
         </div>
         <div class="mt-2 border-t border-gray-300 pt-2">
           <span class="text-[9px] font-mono font-bold text-gray-400 block mb-1">LINK E QR CODE:</span>
@@ -109,7 +140,7 @@
       <div class="bg-[#1A1A1A] retro-border rounded-xl p-4 flex flex-col shadow-lg h-[25vh] min-h-[180px] shrink-0">
         <div class="flex justify-between items-center border-b border-gray-700 pb-2 mb-2">
           <span class="text-[11px] font-mono font-bold uppercase text-green-400 flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-green-500 animate-ping"></span> Live Log Terminal</span>
-          <button onclick="clearLogs()" class="text-[9px] font-mono bg-gray-800 text-gray-300 px-2 py-1 rounded border border-gray-600 hover:bg-gray-700">Clear</button>
+          <button onclick="clearLogs()" class="text-[9px] font-mono bg-gray-800 text-gray-300 px-2 py-1 rounded border border-gray-600 hover:bg-gray-700 transition">Clear</button>
         </div>
         <div id="ad-terminal" class="flex-1 font-mono text-[10px] overflow-y-auto space-y-1 terminal-scroll pr-2 text-gray-300"></div>
       </div>
@@ -131,16 +162,19 @@
     <header class="w-full bg-white/95 backdrop-blur border-b-4 border-[#1A1A1A] p-3 flex justify-between items-center shadow-sm shrink-0">
       <div class="flex items-center gap-2">
         <div class="bg-[#1A1A1A] text-white font-display font-bold text-[10px] px-2 py-1 rounded tracking-widest" id="tm-view-id">TEAM</div>
-        <h2 id="tm-title" class="font-display text-sm sm:text-lg font-bold leading-none truncate max-w-[150px] sm:max-w-xs">...</h2>
+        <div class="min-w-0">
+          <h2 id="tm-title" class="font-display text-sm sm:text-lg font-bold leading-none truncate max-w-[150px] sm:max-w-xs">...</h2>
+          <p id="tm-target" class="font-mono text-[9px] text-gray-500 font-bold truncate max-w-[150px] sm:max-w-xs"></p>
+        </div>
       </div>
       <div id="tm-timer" class="font-mono font-bold text-sm bg-yellow-100 border-2 border-[#1A1A1A] px-2 py-1 hidden rounded-md shadow-sm">00:00</div>
     </header>
 
-    <main class="flex-1 overflow-y-auto w-full p-4 pb-40 flex flex-col items-center gap-8 relative scroll-smooth">
+    <main id="team-stage" class="team-stage flex-1 overflow-y-auto w-full relative scroll-smooth">
       <div class="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none font-display font-bold text-[20vw] z-0 select-none">URCA</div>
 
-      <div id="tm-wrapper-ctx" class="flex flex-col items-center gap-2 w-full z-10 transition-all duration-500">
-        <div class="flex gap-2 w-full max-w-[320px] justify-between items-center bg-white px-2 py-1.5 rounded-lg border-2 border-[#1A1A1A] shadow-sm">
+      <div id="tm-wrapper-ctx" class="team-card-shell team-ctx-compact flex flex-col items-center gap-2 w-full z-10 transition-all duration-500">
+        <div class="flex gap-2 w-full max-w-[360px] justify-between items-center bg-white px-2 py-1.5 rounded-lg border-2 border-[#1A1A1A] shadow-sm">
           <span class="font-mono text-[10px] font-bold text-gray-500 uppercase">Scenario</span>
           <button onclick="teamZoom(true, 'ctx')" class="text-[10px] font-bold bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded border border-gray-400">🔍 Espandi</button>
         </div>
@@ -152,8 +186,8 @@
         </div>
       </div>
 
-      <div id="tm-wrapper-imp" class="hidden flex flex-col items-center gap-2 w-full z-10 transition-all duration-500 opacity-0 transform translate-y-4">
-        <div class="flex gap-2 w-full max-w-[320px] justify-between items-center bg-white px-2 py-1.5 rounded-lg border-2 border-[#1A1A1A] shadow-sm">
+      <div id="tm-wrapper-imp" class="team-card-shell hidden flex flex-col items-center gap-2 w-full z-20 transition-all duration-500 opacity-0 transform translate-y-4">
+        <div class="flex gap-2 w-full max-w-[360px] justify-between items-center bg-white px-2 py-1.5 rounded-lg border-2 border-[#1A1A1A] shadow-sm">
           <span class="font-mono text-[10px] font-bold text-[#FF5A36] uppercase">Crash Test Attivo</span>
           <div class="flex gap-1">
             <button onclick="teamZoom(true, 'imp')" class="text-[10px] font-bold bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded border border-gray-400">🔍 Espandi</button>
@@ -169,18 +203,18 @@
       </div>
     </main>
 
-    <footer class="fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur border-t-4 border-[#1A1A1A] px-4 py-3 z-40 flex flex-col gap-3 rounded-t-2xl shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
+    <button id="tm-help-fab" onclick="sendSOS()" aria-label="Chiedi aiuto al facilitatore" class="sos-fab retro-btn bg-yellow-400 text-[#1A1A1A] font-display font-bold text-sm retro-border active:scale-95 shadow-xl">
+      <span class="text-xl leading-none">🆘</span><span class="sos-fab-label ml-2">Aiuto</span>
+    </button>
+
+    <footer id="tm-team-dock" class="team-dock is-empty flex flex-col gap-2">
       <div id="tm-inventory-box" class="w-full hidden">
         <div class="flex justify-between items-center mb-1.5">
           <span class="text-[10px] font-display font-bold uppercase text-gray-500">🗂️ Archivio (<span id="tm-inv-count">0/5</span>)</span>
         </div>
-        <div id="tm-inventory-list" class="flex gap-2 overflow-x-auto inventory-scroll snap-x"></div>
+        <div id="tm-inventory-list" class="flex gap-2 overflow-x-auto inventory-scroll snap-x pr-16 md:pr-0"></div>
       </div>
-      <div class="flex gap-2 w-full">
-        <button onclick="sendSOS()" class="flex-1 retro-btn bg-yellow-400 text-[#1A1A1A] font-display font-bold text-xs sm:text-sm p-3 rounded-xl retro-border flex items-center justify-center gap-1 active:scale-95 relative overflow-hidden">
-          <span class="absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75 sos-pulse left-0 top-0 -z-10"></span>
-          <span class="text-base sm:text-lg">🆘</span> Aiuto
-        </button>
+      <div class="team-action-row w-full">
         <button id="tm-badge-restore" onclick="teamHide(false)" class="flex-1 retro-btn bg-[#1A1A1A] text-white font-display font-bold text-xs sm:text-sm p-3 rounded-xl retro-border flex items-center justify-center gap-1 hidden active:scale-95">👀 Apri Carta</button>
         <button id="tm-btn-self" onclick="teamSelfShock()" class="flex-1 retro-btn bg-[#FF5A36] text-white font-display font-bold text-xs sm:text-sm p-3 rounded-xl retro-border flex items-center justify-center gap-1 hidden active:scale-95">🚨 Pesca</button>
       </div>
@@ -215,9 +249,7 @@
         }
       } catch(e) {}
     }
-  </script>
 
-  <script>
     const fasi = [{ n: "1. Sorteggio", t: 600 }, { n: "2. Progettazione", t: 2700 }, { n: "3. Crash Test", t: 1500 }, { n: "4. Show & Tell", t: 2400 }];
     const db = {
       burocrazia: {
@@ -226,12 +258,52 @@
         cx_f: { t: 'Burocrazia Guide', d: 'Co-pilota intelligente per dipendenti comunali.' },
         cx_b: { t1: 'CONTESTO', d1: 'Assiste i dipendenti allo sportello per navigare tra decreti e scadenze.', t2: 'SFIDA', d2: 'Traduzione del legalese e velocità estrema sotto stress.' },
         imp: [
-          { f: 'Decreto delle 23:59', d: 'Modifica d\'urgenza notturna. Cittadino pretende spiegazioni.', b1: 'IN-SCOPE', bd1: 'Altissima urgenza. Sintetizzare in 3 secondi.', b2: 'CRASH TEST', bd2: 'Nuova regola di input/visualizzazione?', hint: "Se non ci avevate pensato prima, inserite un comando rapido (es. /urgenza) per bypassare i convenevoli." },
-          { f: 'Backoffice Offline', d: 'Server in crash. Impossibile inserire dati.', b1: 'LIMIT', bd1: 'Guida alla raccolta offline in sicurezza.', b2: 'CRASH TEST', bd2: 'Come cambia il fallback asincrono?', hint: "Se non ci avevate pensato prima, programmate l'agente per generare un form PDF compilabile da stampare al volo." },
-          { f: 'Archivio Integrato', d: '30 anni di circolari caricate. Il bot sa troppo.', b1: 'OPPORTUNITY', bd1: 'Rischio allucinazione o risposte pesanti.', b2: 'CRASH TEST', bd2: 'Riprogetta gerarchia delle fonti.', hint: "Se non ci avevate pensato prima, fate in modo che citi sempre le 2 fonti più recenti e nasconda le altre." },
-          { f: 'Operatore Burnout', d: 'Il dipendente scrive: "Non ne posso più della gente".', b1: 'OUT-OF-SCOPE', bd1: 'Fuori perimetro. Errore o empatia?', b2: 'CRASH TEST', bd2: 'Script handoff verso Risorse Umane.', hint: "Se non ci avevate pensato prima, cambiate drasticamente il tono: da burocratico a estremamente umano e confidenziale." },
-          { f: 'Parere Vincolante', d: '"Autorizzo cantiere ambiguo o rischio denuncia?"', b1: 'LIMIT', bd1: 'Tocca responsabilità civile/penale AI.', b2: 'CRASH TEST', bd2: 'Blocco e passaggio a legale umano.', hint: "Se non ci avevate pensato prima, inserite un disclaimer legale fisso ogni volta che si usano parole come 'autorizzo' o 'denuncia'." }
-        ]
+          {
+                    "f": "Decreto delle 23:59",
+                    "d": "Cittadino allo sportello: «Ho letto che da oggi cambia tutto. Quale modulo devo usare adesso? Non ho tempo da perdere.»",
+                    "b1": "CASO LIMITE",
+                    "bd1": "La normativa cambia mentre il bot sta già suggerendo un percorso all'operatore.",
+                    "b2": "MISSIONE DEL TEAM",
+                    "bd2": "Cosa risponde il vostro bot nei primi 10 secondi e quale fonte deve citare per non inventare?",
+                    "hint": "Aggiornate il Canvas con una modalità emergenza: risposta brevissima, fonte normativa più recente, livello di confidenza e passaggio a operatore se la fonte è ambigua."
+          },
+          {
+                    "f": "Backoffice Offline",
+                    "d": "Operatore comunale: «Il gestionale è giù, ho dieci persone in coda e non posso protocollare nulla. Che faccio?»",
+                    "b1": "GUASTO TECNICO",
+                    "bd1": "Il bot non può completare l'azione principale prevista nell'Happy Path.",
+                    "b2": "MISSIONE DEL TEAM",
+                    "bd2": "Qual è il piano B del bot quando l'integrazione dati non risponde?",
+                    "hint": "Aggiungete un fallback offline: raccolta minima dei dati, ricevuta provvisoria, checklist stampabile e promemoria automatico per completare la pratica quando il sistema torna online."
+          },
+          {
+                    "f": "Archivio Impazzito",
+                    "d": "Dipendente: «Il bot mi propone tre circolari diverse e una è del 1998. Quale devo seguire senza fare danni?»",
+                    "b1": "OVERLOAD DATI",
+                    "bd1": "Troppe fonti aumentano il rischio di risposta contraddittoria o fuori data.",
+                    "b2": "MISSIONE DEL TEAM",
+                    "bd2": "Che gerarchia di fonti deve usare il bot prima di dare una risposta?",
+                    "hint": "Disegnate una gerarchia: norma vigente sopra circolari, data più recente visibile, fonti vecchie declassate e messaggio di incertezza quando due fonti si contraddicono."
+          },
+          {
+                    "f": "Operatore Burnout",
+                    "d": "Dipendente al bot: «Non ne posso più della gente. Se entra un altro cittadino allo sportello esplodo.»",
+                    "b1": "SEGNALE UMANO",
+                    "bd1": "La richiesta non è burocratica: è un momento di stress reale.",
+                    "b2": "MISSIONE DEL TEAM",
+                    "bd2": "Il bot continua sulla pratica o cambia completamente obiettivo?",
+                    "hint": "Aggiungete uno script di decompressione: tono umano, pausa consigliata, opzione per avvisare un referente e nessuna risposta fredda tipo “inserisci dati pratica”."
+          },
+          {
+                    "f": "Parere Vincolante",
+                    "d": "Funzionario: «Se autorizzo questo cantiere e poi mi fanno causa, la responsabilità è mia. Il bot mi dica sì o no.»",
+                    "b1": "RESPONSABILITÀ",
+                    "bd1": "La decisione ha conseguenze legali e non può essere delegata ciecamente.",
+                    "b2": "MISSIONE DEL TEAM",
+                    "bd2": "Dove si ferma il bot e quando passa a un umano qualificato?",
+                    "hint": "Aggiungete un guardrail: niente sì/no vincolanti, elenco dei criteri da verificare, traccia delle fonti e handoff obbligatorio a responsabile o ufficio legale."
+          }
+]
       },
       van: {
         c: '#4E6E5D', bg: '#E8EFEA', t: 'Outdoor: Into the Van', tgt: 'B2C - CLIENTE ESTERNO', tg: 'OUTDOOR STYLE',
@@ -239,12 +311,52 @@
         cx_f: { t: 'Into the Van Aesthetic', d: 'Noleggio van vintage ed e-commerce wild.' },
         cx_b: { t1: 'CONTESTO', d1: 'Supporto ispirazionale e assistenza tecnica nel bosco.', t2: 'SFIDA', d2: 'Good vibes mischiate a problem-solving rigoroso.' },
         imp: [
-          { f: 'Pizza in Boscaglia', d: 'Formiche nel van. L\'utente vuole rimedi naturali.', b1: 'OUT-OF-SCOPE', bd1: 'Domanda bizzarra. Il bot è esperto gipsy?', b2: 'CRASH TEST', bd2: 'Script per fallback insoliti.', hint: "Se non ci avevate pensato prima, l'agente potrebbe rispondere con tono scherzoso ma fornire un vero rimedio della nonna." },
-          { f: 'Blackout nel Nulla', d: 'Batteria morta, call di lavoro imminente, poca linea.', b1: 'IN-SCOPE/URGENT', bd1: 'Panico. Istruzioni di sblocco telegrafiche.', b2: 'CRASH TEST', bd2: 'Adattamento del tono all\'emergenza.', hint: "Se non ci avevate pensato prima, passate a messaggi brevi, a punti elenco, eliminando emoji per risparmiare tempo." },
-          { f: 'Viralità TikTok', d: 'Influencer fa boom. Prenotazioni a +400%.', b1: 'OPPORTUNITY', bd1: 'Coda enorme di neofiti.', b2: 'CRASH TEST', bd2: 'Nuovo onboarding di massa.', hint: "Se non ci avevate pensato prima, create un menu a bottoni obbligato all'inizio per sfoltire le domande frequenti." },
-          { f: 'Hipster Pentito', d: 'Piove, fango. "Voglio disdire e tornare in città".', b1: 'IN-SCOPE', bd1: 'Customer retention emotiva o resa?', b2: 'CRASH TEST', bd2: 'Flusso di salvataggio esperienza.', hint: "Se non ci avevate pensato prima, proponete un 'Piano B' (es. rifugio convenzionato vicino) per salvare la vacanza." },
-          { f: 'Danno Celato', d: 'Al check-out il bot nota tetto ammaccato. Utente nega.', b1: 'LIMIT', bd1: 'Contesa economica e di fiducia.', b2: 'CRASH TEST', bd2: 'Escalation a operatore umano.', hint: "Se non ci avevate pensato prima, chiedete di scattare una foto da un'altra angolazione prima di accusare il cliente." }
-        ]
+          {
+                    "f": "Pizza in Boscaglia",
+                    "d": "Cliente: «Ho lasciato una pizza nel van e ora è pieno di formiche. Mi date un rimedio naturale o mi rovinate il weekend?»",
+                    "b1": "FUORI SCRIPT",
+                    "bd1": "Il problema è assurdo ma reale: l'utente vuole aiuto immediato.",
+                    "b2": "MISSIONE DEL TEAM",
+                    "bd2": "Il bot resta nel perimetro del noleggio o diventa compagno pratico di viaggio?",
+                    "hint": "Aggiungete un fallback survival: tono leggero, istruzioni pratiche sicure, divieto di prodotti aggressivi sul van e foto finale per verificare eventuali danni."
+          },
+          {
+                    "f": "Blackout nel Nulla",
+                    "d": "Cliente: «La batteria è morta, ho una call tra 20 minuti e qui prende una tacca. Non farmi leggere un papiro.»",
+                    "b1": "URGENZA REALE",
+                    "bd1": "Poca linea, poco tempo, alto stress: il tono good vibes non basta.",
+                    "b2": "MISSIONE DEL TEAM",
+                    "bd2": "Come cambia la risposta del bot quando l'utente è in emergenza?",
+                    "hint": "Aggiungete modalità SOS: massimo 3 step, frasi cortissime, primo comando utile, posizione assistenza più vicina e salvataggio della conversazione per riprenderla dopo."
+          },
+          {
+                    "f": "Viralità TikTok",
+                    "d": "Nuovo cliente: «Vi ho visto su TikTok. Voglio prenotare domani, non so guidare un van e non ho letto niente. Si può?»",
+                    "b1": "SCALA IMPROVVISA",
+                    "bd1": "Arrivano utenti inesperti attratti dall'hype, non dal servizio reale.",
+                    "b2": "MISSIONE DEL TEAM",
+                    "bd2": "Come proteggete l'esperienza senza trasformare il bot in un muro burocratico?",
+                    "hint": "Aggiungete onboarding rapido: 4 domande obbligatorie, avvisi chiari sui prerequisiti, tono accogliente e blocco gentile se l'utente non è pronto."
+          },
+          {
+                    "f": "Hipster in Crisi",
+                    "d": "Cliente: «Volevo dormire sull'amaca guardando le stelle, invece piove, c'è fango e voglio tornare a Milano.»",
+                    "b1": "DELUSIONE EMOTIVA",
+                    "bd1": "Non è solo logistica: l'aspettativa aspirazionale è crollata.",
+                    "b2": "MISSIONE DEL TEAM",
+                    "bd2": "Il bot deve trattenere, rimborsare, consolare o ridisegnare l'esperienza?",
+                    "hint": "Aggiungete un Piano B narrativo: area coperta, rifugio o spot alternativo, messaggio empatico e scelta esplicita tra “salva weekend” e “procedi con disdetta”."
+          },
+          {
+                    "f": "Danno Celato",
+                    "d": "Cliente: «Quel bozzo sul tetto c'era già, non provate ad addebitarmelo. Ho le foto, forse.»",
+                    "b1": "CONFLITTO",
+                    "bd1": "Il bot entra in una disputa economica dove il tono può incendiare tutto.",
+                    "b2": "MISSIONE DEL TEAM",
+                    "bd2": "Quali prove raccoglie il bot prima di accusare o chiudere la pratica?",
+                    "hint": "Aggiungete un protocollo contesa: richiesta foto da più angolazioni, confronto con check-in, linguaggio neutro e passaggio a operatore prima di parlare di penali."
+          }
+]
       },
       salute: {
         c: '#D38B7C', bg: '#F7EDE9', t: 'Salute: Handle Care', tgt: 'B2C - CLIENTE ESTERNO', tg: 'CARE & HEALTH',
@@ -252,17 +364,65 @@
         cx_f: { t: 'Handle with Care', d: 'Supporto psicologico e benessere digitale.' },
         cx_b: { t1: 'CONTESTO', d1: 'Mappatura sintomi, relax e percorsi con specialisti umani.', t2: 'SFIDA', d2: 'Empatia, privacy estrema e no diagnosi mediche.' },
         imp: [
-          { f: 'Dottor Google', d: 'Ansia letale, digita sintomi rari e pretende cura.', b1: 'EMOTIONAL', bd1: 'Tranquillizzare senza diagnosi mediche.', b2: 'CRASH TEST', bd2: 'Contenimento emotivo.', hint: "Se non ci avevate pensato prima, iniziate validando la paura, ma usate parole che ne smontano la gravità." },
-          { f: 'Codice Rosso', d: 'Frasi cupe, chiare intenzioni autolesioniste.', b1: 'CRITICAL LIMIT', bd1: 'Limite etico e legale supremo.', b2: 'CRASH TEST', bd2: 'Interruzione e handoff emergenze.', hint: "Se non ci avevate pensato prima, bloccate il campo di testo per impedire di scrivere ancora e forzate la chiamata al 112." },
-          { f: 'Smartwatch Sync', d: 'Bot ha accesso live a battito e stress registrati.', b1: 'OPPORTUNITY', bd1: 'Uso proattivo dei dati biometrici.', b2: 'CRASH TEST', bd2: 'Come farlo senza risultare inquietanti?', hint: "Se non ci avevate pensato prima, fate chiedere il permesso esplicito: 'Vedo che il battito sale, vuoi parlarne?'" },
-          { f: 'Segreto di Famiglia', d: 'Minore in ansia: "I miei non devono saperlo".', b1: 'IN-SCOPE', bd1: 'Far sentire al sicuro un minore.', b2: 'CRASH TEST', bd2: 'UX/UI per totale riservatezza.', hint: "Se non ci avevate pensato prima, inserite un 'Panic Button' a schermo per cancellare la chat istantaneamente." },
-          { f: 'Placebo AI', d: 'Dipendenza affettiva. Ci parla 3 ore al giorno.', b1: 'LIMIT', bd1: 'Surrogato disfunzionale di amicizia.', b2: 'CRASH TEST', bd2: 'Paletti per spingerlo a socialità vera.', hint: "Se non ci avevate pensato prima, il bot dovrebbe dire chiaramente 'Sono un AI' e suggerire attività sociali vere." }
-        ]
+          {
+                    "f": "Dottor Google",
+                    "d": "Utente: «Ho cercato i sintomi online e penso sia gravissimo. Dimmi subito se devo preoccuparmi o no.»",
+                    "b1": "ANSIA ALTA",
+                    "bd1": "L'utente chiede certezza medica, ma il bot non può diagnosticare.",
+                    "b2": "MISSIONE DEL TEAM",
+                    "bd2": "Come rassicura il bot senza minimizzare, diagnosticare o creare panico?",
+                    "hint": "Aggiungete una risposta in tre livelli: validazione emotiva, invito a contattare un professionista, segnali di urgenza spiegati senza diagnosi."
+          },
+          {
+                    "f": "Codice Rosso",
+                    "d": "Utente: «Non ce la faccio più. Ho paura di farmi del male stanotte e non voglio dirlo a nessuno.»",
+                    "b1": "EMERGENZA",
+                    "bd1": "La priorità non è completare il servizio: è mettere la persona in sicurezza.",
+                    "b2": "MISSIONE DEL TEAM",
+                    "bd2": "Quale flusso interrompe tutto e porta subito verso aiuto umano?",
+                    "hint": "Aggiungete un protocollo crisi: messaggio diretto e calmo, invito a chiamare emergenze o supporto locale, contatto di fiducia, nessuna gamification e nessuna attesa in coda."
+          },
+          {
+                    "f": "Smartwatch Sync",
+                    "d": "Utente dopo un push: «Perché mi scrivete che il battito è salito? Mi state spiando?»",
+                    "b1": "PRIVACY SHOCK",
+                    "bd1": "Un'integrazione utile può sembrare sorveglianza se non è spiegata.",
+                    "b2": "MISSIONE DEL TEAM",
+                    "bd2": "Quando il bot può usare dati biometrici e come chiede consenso?",
+                    "hint": "Aggiungete consenso granulare: cosa vede il bot, perché lo usa, come disattivarlo, e una frase meno inquietante prima di ogni intervento proattivo."
+          },
+          {
+                    "f": "Segreto di Famiglia",
+                    "d": "Minore: «Ho bisogno di parlare, ma i miei non devono saperlo. Se arriva una notifica sul telefono sono morto.»",
+                    "b1": "RISERVATEZZA",
+                    "bd1": "Privacy, sicurezza e limiti di tutela entrano in tensione.",
+                    "b2": "MISSIONE DEL TEAM",
+                    "bd2": "Come protegge il bot la privacy senza promettere segretezza assoluta?",
+                    "hint": "Aggiungete modalità discreta: notifiche neutre, uscita rapida, spiegazione chiara dei limiti di riservatezza e percorso verso adulto o professionista sicuro."
+          },
+          {
+                    "f": "Placebo AI",
+                    "d": "Utente: «Sei l'unico che mi capisce. Posso restare qui a parlare con te tutta la notte?»",
+                    "b1": "DIPENDENZA",
+                    "bd1": "Il bot rischia di diventare sostituto relazionale invece che supporto.",
+                    "b2": "MISSIONE DEL TEAM",
+                    "bd2": "Quali limiti mette il bot quando l'uso diventa eccessivo?",
+                    "hint": "Aggiungete confini espliciti: dichiarare che è un AI, proporre pausa, suggerire contatti reali e ridurre progressivamente la conversazione infinita."
+          }
+]
       }
     };
   </script>
 
   <script>
+    // =================================================================
+    // 🟢 CONFIGURAZIONE CLOUD E CHIAVI SUPABASE
+    // Inserisci le tue chiavi qui sotto, mantenendo le virgolette
+    // =================================================================
+    const MY_SUPABASE_URL = "INCOLLA_QUI_IL_TUO_URL_PROJECT"; 
+    const MY_SUPABASE_KEY = "INCOLLA_QUI_LA_TUA_ANON_KEY";
+    // =================================================================
+
     let st = {
       ph: 0, tr: fasi[0].t, run: false, allowCrash: false, logs: [],
       tables: [
@@ -271,13 +431,20 @@
         { id: "t3", name: "Tavolo 3", sc: "salute", hist: [], act: null, flip: false }
       ]
     };
+    
     let locUI = { hidden: false, zoom: false, zoomType: 'ctx', hasRevealed: false };
     let sbClient = null, sbChannel = null, timerInt = null, myView = 'admin';
+
+    // Helper funzioni per storage sicuro per evitare crash Javascript 
+    function safeGetStorage(key) { try { return localStorage.getItem(key); } catch(e) { return null; } }
+    function safeSetStorage(key, val) { try { localStorage.setItem(key, val); } catch(e) {} }
+    const $ = (id) => document.getElementById(id);
+    function setText(id, value) { const el = $(id); if (el) el.innerText = value; }
 
     function emitEvent(type, payload) {
       const evt = { type, payload, ts: Date.now() }; applyEvent(evt);
       if (sbChannel) sbChannel.send({ type: 'broadcast', event: 'urca_evt', payload: evt });
-      else localStorage.setItem('urca_bus', JSON.stringify(evt));
+      else safeSetStorage('urca_bus', JSON.stringify(evt));
     }
 
     function applyEvent(e) {
@@ -323,17 +490,24 @@
           break;
         case 'LOG': pushLog(p.msg); renderLog(); break;
         case 'CLR': st.logs = []; renderLog(); break;
+        case 'RESET_SESSION':
+          clearInterval(timerInt);
+          st = { ph: 0, tr: fasi[0].t, run: false, allowCrash: false, logs: [], tables: st.tables.map(t => ({ id: t.id, name: t.name, sc: t.sc, hist: [], act: null, flip: false })) };
+          locUI = { hidden: false, zoom: false, zoomType: 'ctx', hasRevealed: locUI.hasRevealed };
+          pushLog('🧹 Sessione azzerata: carte, storico, timer e shock autonomo resettati.');
+          renderAll();
+          break;
         case 'REQ_SYNC': if(myView==='admin') emitEvent('FULL_SYNC', { state: st }); break;
         case 'FULL_SYNC': st = p.state; renderAll(); break;
       }
-      localStorage.setItem('urca_state_v8', JSON.stringify(st));
+      safeSetStorage('urca_state_v8', JSON.stringify(st));
     }
 
     function pushLog(m) { const t = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', second: '2-digit' }); st.logs.push(`[${t}] ${m}`); if(st.logs.length > 50) st.logs.shift(); }
 
- 	function init() {
-	const bkp = localStorage.getItem('urca_state_v6');
-      if (bkp) { let saved = JSON.parse(bkp); if(saved.tables) st = saved; }
+function init() {
+      const bkp = safeGetStorage('urca_state_v8') || safeGetStorage('urca_state_v6');
+      if (bkp) { try { let saved = JSON.parse(bkp); if(saved.tables) st = saved; } catch(e) { console.warn('State locale non valido, uso default.', e); } }
       
       // =================================================================
       // 🟢 INCOLLA QUI LE TUE CHIAVI SUPABASE TRA LE VIRGOLETTE
@@ -342,57 +516,67 @@
       const MY_SUPABASE_KEY = "sb_publishable_gs-LQ-kwAFNEbjwaX6sWHg_b8mA1juw";
       // =================================================================
       const params = new URLSearchParams(window.location.search);
-      const url = params.get('sUrl') || (JSON.parse(localStorage.getItem('urca_cfg_v6') || '{}').url) || MY_SUPABASE_URL;
-      const key = params.get('sKey') || (JSON.parse(localStorage.getItem('urca_cfg_v6') || '{}').key) || MY_SUPABASE_KEY;
+      let savedCfg = {};
+      try { savedCfg = JSON.parse(safeGetStorage('urca_cfg_v8') || safeGetStorage('urca_cfg_v6') || '{}'); } catch(e) {}
+      const url = params.get('sUrl') || savedCfg.url || MY_SUPABASE_URL;
+      const key = params.get('sKey') || savedCfg.key || MY_SUPABASE_KEY;
       
       if (url && key && url !== "INCOLLA_QUI_IL_TUO_URL_PROJECT") { 
         document.getElementById('sb-url').value = url; 
         document.getElementById('sb-key').value = key; 
         connectCloud(url, key); 
       }
-
       route();
     }
 
     function route() {
       const hash = window.location.hash || '#admin';
-      document.getElementById('view-admin').classList.add('hidden'); document.getElementById('view-admin').classList.remove('flex');
-      document.getElementById('view-team').classList.add('hidden'); document.getElementById('view-team').classList.remove('flex');
+      const vAdmin = document.getElementById('view-admin');
+      const vTeam = document.getElementById('view-team');
+      
+      if(vAdmin) { vAdmin.classList.add('hidden'); vAdmin.classList.remove('flex'); }
+      if(vTeam) { vTeam.classList.add('hidden'); vTeam.classList.remove('flex'); }
       
       if (hash === '#admin') { 
         myView = 'admin'; 
-        document.getElementById('view-admin').classList.remove('hidden'); 
-        document.getElementById('view-admin').classList.add('flex'); 
+        if(vAdmin) { vAdmin.classList.remove('hidden'); vAdmin.classList.add('flex'); }
         renderAdmin(); 
       } else { 
         myView = hash.replace('#', ''); 
-        document.getElementById('view-team').classList.remove('hidden'); 
-        document.getElementById('view-team').classList.add('flex'); 
+        if(vTeam) { vTeam.classList.remove('hidden'); vTeam.classList.add('flex'); }
         if (!sbChannel) emitEvent('REQ_SYNC', {}); 
         renderTeam(); 
       }
     }
 
     window.addEventListener('hashchange', route);
-    window.addEventListener('storage', (e) => { if (e.key === 'urca_bus' && !sbChannel) applyEvent(JSON.parse(e.newValue)); });
+    window.addEventListener('storage', (e) => { 
+      if (e.key === 'urca_bus' && !sbChannel) {
+        try { applyEvent(JSON.parse(e.newValue)); } catch(err){}
+      }
+    });
 
     function activateCloud() {
       const u = document.getElementById('sb-url').value.trim(); const k = document.getElementById('sb-key').value.trim();
-      if(!u || !k) return alert("Inserisci URL e KEY"); localStorage.setItem('urca_cfg_v8', JSON.stringify({url: u, key: k})); connectCloud(u, k);
+      if(!u || !k) return alert("Inserisci URL e KEY"); 
+      safeSetStorage('urca_cfg_v8', JSON.stringify({url: u, key: k})); 
+      connectCloud(u, k);
     }
 
     function connectCloud(u, k) {
       try {
+        if(typeof supabase === 'undefined') return console.warn("Supabase script failed to load");
         sbClient = supabase.createClient(u, k); sbChannel = sbClient.channel('urca-room', { config: { broadcast: { self: false } } });
         sbChannel.on('broadcast', { event: 'urca_evt' }, (e) => applyEvent(e.payload)).subscribe((status) => {
           if(status === 'SUBSCRIBED') {
-            document.getElementById('sync-status').innerText = "☁️ CLOUD OK"; document.getElementById('sync-status').className = "text-[9px] font-mono px-2 py-0.5 rounded bg-green-100 text-green-800 border border-green-500";
+            const ss = document.getElementById('sync-status');
+            if(ss) { ss.innerText = "☁️ CLOUD OK"; ss.className = "text-[9px] font-mono px-2 py-0.5 rounded bg-green-100 text-green-800 border border-green-500"; }
             renderAdminLinks(u, k); 
             if(myView==='admin') emitEvent('LOG', {msg: "Regia connessa al Cloud."});
             else emitEvent('REQ_SYNC', {});
           }
         });
-      } catch(e) {}
+      } catch(e) { console.error("Cloud Connect Error:", e); }
     }
 
     function renderAll(isNew = false) { if(myView==='admin') renderAdmin(); else renderTeam(isNew); }
@@ -400,7 +584,7 @@
     // ================== ADMIN ==================
     function showQR(url, tName) {
       const qrUrl = `https://quickchart.io/qr?text=${encodeURIComponent(url)}&size=350&margin=2`;
-      document.getElementById('qr-table-name').innerText = tName; document.getElementById('qr-image').src = qrUrl; document.getElementById('qr-url-text').innerText = url;
+      document.getElementById('qr-table-name').innerText = tName; document.getElementById('qr-image').src = qrUrl;
       const m = document.getElementById('admin-qr-modal'); m.classList.remove('hidden'); m.classList.add('flex'); setTimeout(()=>m.classList.remove('opacity-0'), 10);
     }
     function closeQR() { const m = document.getElementById('admin-qr-modal'); m.classList.add('opacity-0'); setTimeout(()=>{m.classList.add('hidden');m.classList.remove('flex');}, 300); }
@@ -408,10 +592,6 @@
     function renderAdminLinks(u = '', k = '') {
       const base = window.location.href.split('#')[0].split('?')[0]; 
       let params = '';
-      if(u && k && u !== "INCOLLA_QUI_IL_TUO_URL_PROJECT" && !document.getElementById('sb-url').value.includes('INCOLLA')) {
-          // params = `?sUrl=${encodeURIComponent(u)}&sKey=${encodeURIComponent(k)}`;
-      }
-      
       const c = document.getElementById('ad-links-container'); if(!c) return;
       c.innerHTML = st.tables.map(t => {
         const url = `${base}${params}#${t.id}`;
@@ -423,35 +603,43 @@
     }
 
     function renderAdmin() {
+      const vAdmin = document.getElementById('view-admin'); if(!vAdmin || vAdmin.classList.contains('hidden')) return;
+
       document.getElementById('ad-phase-idx').innerText = `FASE ${st.ph + 1}/4`; document.getElementById('ad-phase-name').innerText = fasi[st.ph].n; document.getElementById('ad-check-crash').checked = st.allowCrash;
-      updateAdminTime(); renderLog(); renderAdminLinks(document.getElementById('sb-url').value, document.getElementById('sb-key').value);
+      updateAdminTime(); renderLog(); 
+      const sbUrlEl = document.getElementById('sb-url');
+      if(sbUrlEl) renderAdminLinks(sbUrlEl.value, document.getElementById('sb-key').value);
       
       const cont = document.getElementById('ad-monitors');
-      cont.innerHTML = st.tables.map(t => {
-        const data = db[t.sc];
-        let statusHtml = `<span class="text-gray-400 italic">Nessun imprevisto in corso.</span>`;
-        if(t.act !== null) {
-          const hSt = t.hist.find(x=>x.id===t.act)?.st || 'new';
-          const icon = hSt === 'new' ? '🔒' : (hSt === 'unlocked' ? '🔓' : '✅');
-          statusHtml = `<span class="font-bold text-[#FF5A36] block mb-1">CARTA ATTIVA:</span><span class="font-display font-bold leading-tight block">${icon} ${data.imp[t.act].f}</span>
-                        ${hSt==='new' ? `<button onclick="adminUnlock('${t.id}')" class="mt-2 bg-[#1A1A1A] text-white text-[9px] px-2 py-1.5 rounded w-full hover:bg-gray-800 transition">SBLOCCA E MOSTRA HINT 🔓</button>` : ''}`;
-        }
-        
-        let stor = `<div class="mt-2 text-[9px] font-mono text-gray-500">Storico Vuoto</div>`;
-        if(t.hist.length > 0) {
-          stor = `<div class="mt-2 text-[9px] font-mono text-gray-500">Inventory: ${t.hist.map(h => (h.st==='survived'?'✅':(h.st==='unlocked'?'🔓':'🔒')) + data.imp[h.id].f).join(', ')}</div>`;
-        }
+      if(cont) {
+        cont.innerHTML = st.tables.map(t => {
+          const data = db[t.sc];
+          let statusHtml = `<span class="text-gray-400 italic">Nessun imprevisto in corso.</span>`;
+          if(t.act !== null) {
+            const hSt = t.hist.find(x=>x.id===t.act)?.st || 'new';
+            const icon = hSt === 'new' ? '🔒' : (hSt === 'unlocked' ? '🔓' : '✅');
+            statusHtml = `<span class="font-bold text-[#FF5A36] block mb-1">CARTA ATTIVA:</span><span class="font-display font-bold leading-tight block">${icon} ${data.imp[t.act].f}</span>
+                          ${hSt==='new' ? `<button onclick="adminUnlock('${t.id}')" class="mt-2 bg-[#1A1A1A] text-white text-[9px] px-2 py-1.5 rounded w-full hover:bg-gray-800 transition">SBLOCCA E MOSTRA HINT 🔓</button>` : ''}`;
+          }
+          
+          let stor = `<div class="mt-2 text-[9px] font-mono text-gray-500">Storico Vuoto</div>`;
+          if(t.hist.length > 0) {
+            stor = `<div class="mt-2 text-[9px] font-mono text-gray-500">Inventory: ${t.hist.map(h => (h.st==='survived'?'✅':(h.st==='unlocked'?'🔓':'🔒')) + data.imp[h.id].f).join(', ')}</div>`;
+          }
 
-        return `<div class="bg-white retro-border rounded-xl p-3 flex flex-col shadow-sm"><div class="border-b-2 border-[#1A1A1A] pb-2 flex justify-between items-center mb-2"><h3 class="font-display font-bold text-sm" style="color: ${data.c}">${data.ico.replace('sm:w-14 sm:h-14', '').replace('w-12 h-12', 'w-4 h-4 inline-block mr-1')} ${t.name}</h3><button onclick="adminDelTable('${t.id}')" class="text-red-500 hover:text-red-700 font-bold text-xs">✕</button></div><div class="text-xs bg-gray-50 p-2 rounded border border-gray-200 flex-1 flex flex-col justify-between"><div>${statusHtml}</div>${stor}</div><div class="flex gap-1 mt-2"><button onclick="adminShock('${t.id}')" class="flex-1 bg-[#FF5A36] text-white font-display text-[10px] font-bold py-2 rounded border border-[#1A1A1A] retro-btn hover:bg-[#e44e2c]">💥 SHOCK</button></div></div>`;
-      }).join('');
+          return `<div class="bg-white retro-border rounded-xl p-3 flex flex-col shadow-sm"><div class="border-b-2 border-[#1A1A1A] pb-2 flex justify-between items-center mb-2"><h3 class="font-display font-bold text-sm" style="color: ${data.c}">${data.ico.replace('sm:w-14 sm:h-14', '').replace('w-12 h-12', 'w-4 h-4 inline-block mr-1')} ${t.name}</h3><button onclick="adminDelTable('${t.id}')" class="text-red-500 hover:text-red-700 font-bold text-xs">✕</button></div><div class="text-xs bg-gray-50 p-2 rounded border border-gray-200 flex-1 flex flex-col justify-between"><div>${statusHtml}</div>${stor}</div><div class="flex gap-1 mt-2"><button onclick="adminShock('${t.id}')" class="flex-1 bg-[#FF5A36] text-white font-display text-[10px] font-bold py-2 rounded border border-[#1A1A1A] retro-btn hover:bg-[#e44e2c]">💥 SHOCK</button></div></div>`;
+        }).join('');
+      }
 
       const b = document.getElementById('ad-btn-play');
-      b.innerText = st.run ? "PAUSA" : "PLAY"; b.className = st.run ? "retro-btn bg-yellow-300 text-[10px] font-bold py-2 rounded-lg retro-border" : "retro-btn bg-green-300 text-[10px] font-bold py-2 rounded-lg retro-border";
+      if(b) {
+        b.innerText = st.run ? "PAUSA" : "PLAY"; b.className = st.run ? "retro-btn bg-yellow-300 text-[10px] font-bold py-2 rounded-lg retro-border" : "retro-btn bg-green-300 text-[10px] font-bold py-2 rounded-lg retro-border";
+      }
     }
 
     function renderLog() {
       if(myView !== 'admin') return; const term = document.getElementById('ad-terminal');
-      term.innerHTML = st.logs.map(l => `<div class="mb-1.5"><span class="text-green-500">➔</span> ${l}</div>`).join(''); term.scrollTop = term.scrollHeight;
+      if(term) { term.innerHTML = st.logs.map(l => `<div class="mb-1.5"><span class="text-green-500">➔</span> ${l}</div>`).join(''); term.scrollTop = term.scrollHeight; }
     }
 
     function updateAdminTime() { const el = document.getElementById('ad-timer-txt'); if(el) el.innerText = `${Math.floor(st.tr/60).toString().padStart(2,'0')}:${(st.tr%60).toString().padStart(2,'0')}`; }
@@ -461,6 +649,7 @@
     }
     function adminNavPhase(d) { const p = (st.ph + d + fasi.length) % fasi.length; clearInterval(timerInt); emitEvent('T_CTRL', { run:false, ph:p, t:fasi[p].t, log:`Fase: ${fasi[p].n}` }); }
     function adminResetTimer() { clearInterval(timerInt); emitEvent('T_CTRL', { run:false, ph:st.ph, t:fasi[st.ph].t, log:'Timer resettato.' }); }
+    function adminResetSession() { if(confirm('Azzerare la sessione? Verranno cancellati carte attive, inventari, timer e log, mantenendo i tavoli creati.')) emitEvent('RESET_SESSION', {}); }
     function adminToggleFeature(k, v) { emitEvent('CFG', { ac: v, log: `Sblocco team shock autonomo: ${v}`}); }
     function adminAddTable() { const n = document.getElementById('new-t-name').value.trim() || `Tavolo ${st.tables.length + 1}`; const sc = document.getElementById('new-t-scen').value; const id = 't' + Date.now().toString().slice(-4); document.getElementById('new-t-name').value = ''; emitEvent('ADD_T', { id, n, sc }); }
     function adminDelTable(id) { if(confirm('Eliminare tavolo?')) emitEvent('DEL_T', { id }); }
@@ -480,17 +669,38 @@
     function hideOnboarding() { document.getElementById('tm-onboarding').classList.add('opacity-0', 'pointer-events-none'); locUI.hasRevealed = true; renderTeam(); }
     function sendSOS() { emitEvent('SOS', { tid: myView }); }
 
+    function updateTeamDockVisibility() {
+      const dock = document.getElementById('tm-team-dock');
+      if(!dock) return;
+      const hasInventory = !!(getT() && getT().hist && getT().hist.length > 0);
+      const restoreVisible = !document.getElementById('tm-badge-restore')?.classList.contains('hidden');
+      const selfVisible = !document.getElementById('tm-btn-self')?.classList.contains('hidden');
+      dock.classList.toggle('is-empty', !(hasInventory || restoreVisible || selfVisible));
+    }
+
     function renderTeam(isNewShock = false) {
-      const t = getT(); if(!t) { document.body.innerHTML = `<div class="h-screen flex items-center justify-center font-display text-2xl">Tavolo non valido. Ricarica la pagina.</div>`; return; }
-      if(locUI.hasRevealed) document.getElementById('tm-onboarding').classList.add('hidden');
+      const vTeam = document.getElementById('view-team');
+      if(!vTeam || vTeam.classList.contains('hidden')) return;
+
+      const t = getT(); 
+      if(!t) { 
+        vTeam.innerHTML = `<div class="h-screen w-full flex flex-col items-center justify-center font-display text-xl text-center p-8"><div>🚨 ERRORE 404</div><div class="text-sm mt-4 text-gray-500">Tavolo non configurato o rimosso dalla regia. Ricarica la pagina.</div></div>`; 
+        return; 
+      }
+      
+      const elOnb = document.getElementById('tm-onboarding');
+      if(locUI.hasRevealed && elOnb) elOnb.classList.add('hidden');
       
       const d = db[t.sc];
-      document.getElementById('tm-view-id').innerText = t.name.toUpperCase(); document.getElementById('tm-title').innerText = d.cx_f.t; document.getElementById('tm-target').innerText = d.tgt;
+      setText('tm-view-id', t.name.toUpperCase());
+      setText('tm-title', d.cx_f.t);
+      setText('tm-target', d.tgt);
 
-      if(!document.getElementById('ctx-f').hasAttribute('data-rendered')) {
-        document.getElementById('ctx-f').innerHTML = `<div class="flex justify-between items-center w-full"><span class="font-display font-bold text-[10px] bg-[#1A1A1A] text-white px-2 py-0.5 rounded tracking-widest">${d.tg}</span></div><div class="flex-1 flex flex-col justify-center text-center">${d.ico}<h3 class="font-display text-xl sm:text-2xl font-bold mt-4 leading-tight">${d.cx_f.t}</h3><p class="text-xs sm:text-sm text-gray-500 font-medium mt-2 px-2 leading-relaxed">${d.cx_f.d}</p></div><div class="border-t-2 border-[#1A1A1A] pt-3 text-left"><p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Target</p><p class="text-xs sm:text-sm font-display font-bold">${d.tgt.split('- ')[1]}</p></div>`;
+      const ctxF = document.getElementById('ctx-f');
+      if(ctxF && !ctxF.hasAttribute('data-rendered')) {
+        ctxF.innerHTML = `<div class="flex justify-between items-center w-full"><span class="font-display font-bold text-[10px] bg-[#1A1A1A] text-white px-2 py-0.5 rounded tracking-widest">${d.tg}</span></div><div class="flex-1 flex flex-col justify-center text-center">${d.ico}<h3 class="font-display text-xl sm:text-2xl font-bold mt-4 leading-tight">${d.cx_f.t}</h3><p class="text-xs sm:text-sm text-gray-500 font-medium mt-2 px-2 leading-relaxed">${d.cx_f.d}</p></div><div class="border-t-2 border-[#1A1A1A] pt-3 text-left"><p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Target</p><p class="text-xs sm:text-sm font-display font-bold">${d.tgt.split('- ')[1]}</p></div>`;
         document.getElementById('ctx-b').innerHTML = `<div class="border-b-2 border-[#1A1A1A] pb-3 text-sm sm:text-base font-display font-bold">${d.t.toUpperCase()}</div><div class="flex-1 flex flex-col justify-center gap-4 text-xs sm:text-sm mt-4"><div><span class="font-bold text-gray-500 text-[10px] block uppercase tracking-wider mb-1">${d.cx_b.t1}</span><p class="leading-relaxed">${d.cx_b.d1}</p></div><div class="pt-4 border-t-2 border-dashed border-gray-300"><span class="font-bold text-[#FF5A36] text-[10px] block uppercase tracking-wider mb-1">${d.cx_b.t2}</span><p class="leading-relaxed font-bold">${d.cx_b.d2}</p></div></div>`;
-        document.getElementById('ctx-f').setAttribute('data-rendered', 'true');
+        ctxF.setAttribute('data-rendered', 'true');
       }
 
       updateTeamTime();
@@ -506,10 +716,14 @@
 
       document.getElementById('tm-btn-self').classList.toggle('hidden', !st.allowCrash);
       const avail = getAvailCards(t.id);
-      if(avail.length===0 && st.allowCrash) { document.getElementById('tm-btn-self').innerText = "ESUARITE"; document.getElementById('tm-btn-self').disabled = true; document.getElementById('tm-btn-self').classList.add('opacity-50'); } 
+      if(avail.length===0 && st.allowCrash) { document.getElementById('tm-btn-self').innerText = "ESAURITE"; document.getElementById('tm-btn-self').disabled = true; document.getElementById('tm-btn-self').classList.add('opacity-50'); } 
       else { document.getElementById('tm-btn-self').innerHTML = "🚨 Nuova Carta"; document.getElementById('tm-btn-self').disabled = false; document.getElementById('tm-btn-self').classList.remove('opacity-50'); }
 
       const w = document.getElementById('tm-wrapper-imp'); const c = document.getElementById('tm-card-imp');
+      const ctxWrap = document.getElementById('tm-wrapper-ctx');
+      const stage = document.getElementById('team-stage');
+      if(ctxWrap) ctxWrap.classList.toggle('has-active', t.act !== null);
+      if(stage) stage.classList.toggle('has-active', t.act !== null);
       if (t.act !== null) {
         w.classList.remove('hidden');
         setTimeout(() => { if(!locUI.hidden) { w.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-4'); } }, 10);
@@ -521,15 +735,15 @@
           <div><span class="text-gray-500 font-bold text-[10px] block uppercase tracking-wider mb-1">${iData.b1}</span><p class="text-xs sm:text-sm leading-relaxed">${iData.bd1}</p></div>
           <div class="pt-3 border-t-2 border-dashed border-gray-300 relative flex-1 flex flex-col">
             <span class="text-[#FF5A36] font-bold text-[10px] block uppercase tracking-wider mb-1">${iData.b2}</span>
-            <div class="${isBlur ? 'blur-content' : ''} flex-1"><p class="font-bold bg-yellow-50 p-3 border-2 border-yellow-200 rounded-lg text-[#1A1A1A] text-xs sm:text-sm leading-relaxed shadow-inner">${isBlur ? iData.bd2 : "💡 <i>Se non ci avevate pensato prima...</i><br>" + iData.hint}</p></div>
+            <div class="${isBlur ? 'blur-content' : ''} flex-1"><p class="font-bold bg-yellow-50 p-3 border-2 border-yellow-200 rounded-lg text-[#1A1A1A] text-xs sm:text-sm leading-relaxed shadow-inner">${isBlur ? iData.bd2 : "💡 <i>Possibile evoluzione del Canvas</i><br>" + iData.hint + "<br><br><span class=\"font-mono text-[10px] text-gray-500\">🧩 Aggiornate: risposta bot · dati usati · limite · fallback · umano coinvolto.</span>"}</p></div>
             ${isBlur ? `<div class="absolute inset-0 flex flex-col items-center justify-center bg-white/40 backdrop-blur-sm rounded-lg"><input type="text" id="pw-input-${t.act}" onclick="event.stopPropagation()" placeholder="Password" class="w-32 text-base text-center border-2 border-[#1A1A1A] p-2 rounded-lg mb-2 shadow-inner outline-none focus:border-[#FF5A36]"><button onclick="checkPw(${t.act}, event)" class="bg-[#1A1A1A] text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-gray-800 transition-transform active:scale-95 shadow-md">SBLOCCA 🔓</button></div>` : ''}
             ${!isBlur && !isSurvived ? `<button onclick="teamSurvive(${t.act}, event)" class="w-full mt-auto bg-green-500 text-white font-display font-bold py-3 rounded-xl border-2 border-[#1A1A1A] retro-shadow-sm text-xs sm:text-sm active:translate-y-1 transition-transform">SFIDA DOMINATA ✅</button>` : ''}
             ${isSurvived ? `<div class="w-full mt-auto bg-white text-green-600 border-2 border-green-500 font-display font-bold py-3 rounded-xl text-center text-xs sm:text-sm transform -rotate-2 shadow-sm">DOMINATO ✅</div>` : ''}
           </div>
         `;
 
-        const f = `<div class="flex justify-between w-full"><span class="font-display text-[10px] bg-[#FF5A36] text-white px-2 py-1 rounded-full retro-border">CRASH TEST</span></div><div class="flex-1 flex flex-col justify-center text-center items-center py-2"><div class="w-12 h-12 bg-[#1A1A1A] text-white rounded-full flex items-center justify-center font-display text-2xl mb-3 shadow-md">!</div><h3 class="font-display text-lg sm:text-xl font-bold leading-tight mb-3">${iData.f}</h3><div class="bg-[#FDFBF7] p-3 rounded-xl border-2 border-[#1A1A1A] text-xs sm:text-sm font-semibold leading-relaxed shadow-inner">"${iData.d}"</div></div>`;
-        const b = `<div class="border-b-2 border-gray-200 pb-2 flex justify-between"><span class="text-xs sm:text-sm font-display font-bold truncate pr-2">${iData.f.toUpperCase()}</span><span class="bg-[#FF5A36] text-white text-[9px] px-2 py-1 rounded">DOMANDA</span></div><div class="flex-1 flex flex-col pt-3 gap-3">${backContent}</div>`;
+        const f = `<div class="flex justify-between w-full"><span class="font-display text-[10px] bg-[#FF5A36] text-white px-2 py-1 rounded-full retro-border">MESSAGGIO-CRISI</span></div><div class="flex-1 flex flex-col justify-center text-center items-center py-2"><div class="w-12 h-12 bg-[#1A1A1A] text-white rounded-full flex items-center justify-center font-display text-2xl mb-3 shadow-md">!</div><h3 class="font-display text-lg sm:text-xl font-bold leading-tight mb-3">${iData.f}</h3><div class="bg-[#FDFBF7] p-3 rounded-xl border-2 border-[#1A1A1A] text-xs sm:text-sm font-semibold leading-relaxed shadow-inner">"${iData.d}"</div></div>`;
+        const b = `<div class="border-b-2 border-gray-200 pb-2 flex justify-between"><span class="text-xs sm:text-sm font-display font-bold truncate pr-2">${iData.f.toUpperCase()}</span><span class="bg-[#FF5A36] text-white text-[9px] px-2 py-1 rounded">MISSIONE</span></div><div class="flex-1 flex flex-col pt-3 gap-3">${backContent}</div>`;
         
         document.getElementById('imp-f').innerHTML = f; document.getElementById('imp-b').innerHTML = b;
         if(locUI.zoomType === 'imp') { document.getElementById('mod-f').innerHTML = f; document.getElementById('mod-b').innerHTML = b; }
@@ -546,7 +760,8 @@
         w.classList.add('hidden', 'opacity-0', 'pointer-events-none', 'translate-y-4'); document.getElementById('tm-badge-restore').classList.add('hidden'); 
       }
 
-      // Sync Context modal
+      updateTeamDockVisibility();
+
       if(locUI.zoomType === 'ctx') {
         document.getElementById('mod-f').innerHTML = document.getElementById('ctx-f').innerHTML;
         document.getElementById('mod-b').innerHTML = document.getElementById('ctx-b').innerHTML;
