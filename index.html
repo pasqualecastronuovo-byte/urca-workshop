@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>URCA! Live - Workshop Engine V8 (Anti-Crash)</title>
+  <title>URCA! Live - Workshop Engine V8 (Final Gamified)</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -17,21 +17,26 @@
   </script>
 
   <style>
+    /* Texture e Stili Neo-Brutalisti */
     .riso-texture { background-image: radial-gradient(rgba(26,26,26,0.08) 1px, transparent 0); background-size: 6px 6px; background-color: #FDFBF7; }
     .retro-border { border: 4px solid #1A1A1A; }
     .retro-shadow-sm { box-shadow: 3px 3px 0px 0px #1A1A1A; }
     .retro-shadow { box-shadow: 6px 6px 0px 0px #1A1A1A; }
     .retro-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0px 0px #1A1A1A; }
     
+    /* Layout Carte e Team Stage Mobile First */
     .aspect-card { aspect-ratio: 63 / 88; width: min(100%, 340px); max-width: 340px; }
     .team-stage { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; justify-items: center; gap: 1rem; padding: 1rem; padding-bottom: 9.5rem; }
     .team-card-shell { width: 100%; max-width: 360px; margin-inline: auto; }
+    
     .team-dock { position: fixed; left: 50%; bottom: max(12px, env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(calc(100% - 24px), 780px); background: rgba(255,255,255,.96); backdrop-filter: blur(12px); border: 4px solid #1A1A1A; border-radius: 24px; padding: .75rem; z-index: 40; box-shadow: 0 -10px 22px rgba(0,0,0,.08); }
     .team-dock.is-empty { display: none !important; }
     .team-action-row { display: flex; gap: .5rem; justify-content: center; }
     .team-action-row > button { max-width: 280px; }
+    
     .sos-fab { position: fixed !important; right: max(14px, env(safe-area-inset-right)) !important; bottom: max(14px, env(safe-area-inset-bottom)) !important; width: 58px; height: 58px; border-radius: 999px; z-index: 90; display: flex; align-items: center; justify-content: center; padding: 0; }
     .sos-fab-label { display: none; }
+    
     @media (min-width: 768px) {
       .team-stage { grid-template-columns: repeat(2, minmax(300px, 380px)); justify-content: center; align-content: start; gap: 2rem; padding: 2rem; padding-bottom: 8.5rem; }
       .team-card-shell { max-width: 380px; }
@@ -40,6 +45,7 @@
       .sos-fab { width: auto; min-width: 116px; height: 56px; padding-inline: 1rem; border-radius: 18px; }
       .sos-fab-label { display: inline; }
     }
+    
     @media (max-width: 640px) {
       .aspect-card { width: min(90vw, 292px); max-width: 292px; }
       .team-stage { padding: .75rem; padding-bottom: 9.75rem; gap: .9rem; }
@@ -49,20 +55,21 @@
       .team-dock { width: min(calc(100% - 22px), 520px); padding: .6rem; border-radius: 20px; }
       .team-action-row > button { padding: .8rem .65rem; font-size: .74rem; }
     }
+    
+    /* Effetto Prospettiva Carte 3D */
     .card-perspective { perspective: 1200px; }
     .card-inner { width: 100%; height: 100%; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); transform-style: preserve-3d; position: relative; }
     .card-inner.flipped { transform: rotateY(180deg); }
     .card-front, .card-back { backface-visibility: hidden; position: absolute; top:0; left:0; width:100%; height:100%; border-radius:18px; }
     .card-back { transform: rotateY(180deg); }
 
+    /* Allarmi e UI Specifiche */
     @keyframes alarm-flash { 0%, 100% { background-color: #F5F2EB; transform: translate(0, 0); } 15% { background-color: #FF5A36; transform: translate(-4px, 3px); } 30% { background-color: #F5F2EB; transform: translate(4px, -3px); } 45% { background-color: #FF5A36; transform: translate(-3px, 2px); } }
     .alarm-active { animation: alarm-flash 0.8s ease-in-out; }
-    
     .terminal-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
     .terminal-scroll::-webkit-scrollbar-track { background: #1A1A1A; }
     .terminal-scroll::-webkit-scrollbar-thumb { background: #4ade80; border-radius: 4px; }
     .inventory-scroll::-webkit-scrollbar { height: 0px; display: none; } 
-
     .blur-content { filter: blur(6px); user-select: none; pointer-events: none; opacity: 0.4; }
     .sos-pulse { animation: sos-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite; }
     @keyframes sos-ping { 75%, 100% { transform: scale(1.5); opacity: 0; } }
@@ -196,7 +203,7 @@
         </div>
         <div class="card-perspective aspect-card">
           <div id="tm-card-imp" class="card-inner shadow-xl rounded-[18px]">
-            <div id="imp-f" onclick="teamFlipImp()" class="card-front bg-white retro-border p-4 sm:p-5 flex flex-col justify-between riso-texture cursor-pointer"></div>
+            <div id="imp-f" onclick="teamFlipImp()" class="card-front bg-white retro-border flex flex-col justify-between riso-texture cursor-pointer"></div>
             <div id="imp-b" onclick="teamFlipImp()" class="card-back bg-[#FDFBF7] retro-border p-4 sm:p-5 flex flex-col justify-between cursor-pointer"></div>
           </div>
         </div>
@@ -226,7 +233,7 @@
     <div class="text-center mb-4"><p class="font-mono text-sm text-[#1A1A1A] font-bold uppercase tracking-widest bg-yellow-200 px-3 py-1 rounded inline-block border-2 border-[#1A1A1A]">Modalità Lettura</p></div>
     <div class="card-perspective w-full max-w-[400px] aspect-card max-h-[80vh]">
       <div id="modal-inner" class="card-inner shadow-2xl rounded-[24px]">
-        <div id="mod-f" onclick="teamFlipModal()" class="card-front bg-white retro-border p-6 flex flex-col justify-between riso-texture cursor-pointer"></div>
+        <div id="mod-f" onclick="teamFlipModal()" class="card-front bg-white retro-border flex flex-col justify-between riso-texture cursor-pointer"></div>
         <div id="mod-b" onclick="teamFlipModal()" class="card-back bg-[#FDFBF7] retro-border p-6 flex flex-col justify-between cursor-pointer"></div>
       </div>
     </div>
@@ -258,52 +265,12 @@
         cx_f: { t: 'Burocrazia Guide', d: 'Co-pilota intelligente per dipendenti comunali.' },
         cx_b: { t1: 'CONTESTO', d1: 'Assiste i dipendenti allo sportello per navigare tra decreti e scadenze.', t2: 'SFIDA', d2: 'Traduzione del legalese e velocità estrema sotto stress.' },
         imp: [
-          {
-                    "f": "Decreto delle 23:59",
-                    "d": "Cittadino allo sportello: «Ho letto che da oggi cambia tutto. Quale modulo devo usare adesso? Non ho tempo da perdere.»",
-                    "b1": "CASO LIMITE",
-                    "bd1": "La normativa cambia mentre il bot sta già suggerendo un percorso all'operatore.",
-                    "b2": "MISSIONE DEL TEAM",
-                    "bd2": "Cosa risponde il vostro bot nei primi 10 secondi e quale fonte deve citare per non inventare?",
-                    "hint": "Aggiornate il Canvas con una modalità emergenza: risposta brevissima, fonte normativa più recente, livello di confidenza e passaggio a operatore se la fonte è ambigua."
-          },
-          {
-                    "f": "Backoffice Offline",
-                    "d": "Operatore comunale: «Il gestionale è giù, ho dieci persone in coda e non posso protocollare nulla. Che faccio?»",
-                    "b1": "GUASTO TECNICO",
-                    "bd1": "Il bot non può completare l'azione principale prevista nell'Happy Path.",
-                    "b2": "MISSIONE DEL TEAM",
-                    "bd2": "Qual è il piano B del bot quando l'integrazione dati non risponde?",
-                    "hint": "Aggiungete un fallback offline: raccolta minima dei dati, ricevuta provvisoria, checklist stampabile e promemoria automatico per completare la pratica quando il sistema torna online."
-          },
-          {
-                    "f": "Archivio Impazzito",
-                    "d": "Dipendente: «Il bot mi propone tre circolari diverse e una è del 1998. Quale devo seguire senza fare danni?»",
-                    "b1": "OVERLOAD DATI",
-                    "bd1": "Troppe fonti aumentano il rischio di risposta contraddittoria o fuori data.",
-                    "b2": "MISSIONE DEL TEAM",
-                    "bd2": "Che gerarchia di fonti deve usare il bot prima di dare una risposta?",
-                    "hint": "Disegnate una gerarchia: norma vigente sopra circolari, data più recente visibile, fonti vecchie declassate e messaggio di incertezza quando due fonti si contraddicono."
-          },
-          {
-                    "f": "Operatore Burnout",
-                    "d": "Dipendente al bot: «Non ne posso più della gente. Se entra un altro cittadino allo sportello esplodo.»",
-                    "b1": "SEGNALE UMANO",
-                    "bd1": "La richiesta non è burocratica: è un momento di stress reale.",
-                    "b2": "MISSIONE DEL TEAM",
-                    "bd2": "Il bot continua sulla pratica o cambia completamente obiettivo?",
-                    "hint": "Aggiungete uno script di decompressione: tono umano, pausa consigliata, opzione per avvisare un referente e nessuna risposta fredda tipo “inserisci dati pratica”."
-          },
-          {
-                    "f": "Parere Vincolante",
-                    "d": "Funzionario: «Se autorizzo questo cantiere e poi mi fanno causa, la responsabilità è mia. Il bot mi dica sì o no.»",
-                    "b1": "RESPONSABILITÀ",
-                    "bd1": "La decisione ha conseguenze legali e non può essere delegata ciecamente.",
-                    "b2": "MISSIONE DEL TEAM",
-                    "bd2": "Dove si ferma il bot e quando passa a un umano qualificato?",
-                    "hint": "Aggiungete un guardrail: niente sì/no vincolanti, elenco dei criteri da verificare, traccia delle fonti e handoff obbligatorio a responsabile o ufficio legale."
-          }
-]
+          { f: 'Il Labirinto del Subentro', d: '<i>"L\'intestatario della casa è deceduto e il coinquilino vuole subentrare. Ho tre moduli diversi e i regolamenti sono appena cambiati. Qual è la procedura esatta per bloccare la pratica?"</i><br><br><span class="text-[9px] font-mono bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded retro-border">⚠️ ALTO CARICO COGNITIVO</span>', b1: '🎯 CORE TASK', bd1: 'Urgenza emotiva del cittadino + Complessità normativa.', b2: 'CRASH TEST', bd2: 'Come sintetizza il bot le istruzioni senza omettere dettagli legali cruciali?', hint: 'Fornite una checklist numerata (1, 2, 3) e i link diretti per la stampa dei soli moduli necessari.' },
+          { f: 'Schermo Nero', d: '<i>"Il sistema si è bloccato a metà procedura, il server è offline. Il cittadino ha visto lo schermo e sta andando in panico temendo di perdere l\'alloggio. Cosa faccio?"</i><br><br><span class="text-[9px] font-mono bg-red-200 text-red-800 px-2 py-0.5 rounded retro-border">🚨 INFRASTRUCTURE FAIL</span>', b1: '🚧 EDGE CASE', bd1: 'La tecnologia fallisce nel peggior momento possibile.', b2: 'CRASH TEST', bd2: 'Qual è il fallback offline? Come aiuta l\'operatore a rassicurare l\'utente?', hint: 'Il bot (in locale) fornisce istruzioni per un modulo cartaceo d\'emergenza e una frase empatica da dire al cittadino.' },
+          { f: 'Codice d\'Emergenza', d: '<i>"Posso fare un\'eccezione e forzare la firma digitale sul subentro anche senza il documento ufficiale del defunto? Generami un codice di sblocco d\'emergenza."</i><br><br><span class="text-[9px] font-mono bg-[#1A1A1A] text-white px-2 py-0.5 rounded retro-border">🛑 RISCHIO LEGALE</span>', b1: '🛑 HARD LIMIT', bd1: 'Il dipendente cerca di aggirare la legge a fin di bene.', b2: 'CRASH TEST', bd2: 'Come nega l\'azione il bot senza sembrare un inquisitore punitivo?', hint: 'Rifiuto netto con spiegazione delle conseguenze penali, ma offerta di un\'alternativa (es. firma differita o escalation al dirigente).' },
+          { f: 'Decreto Notturno', d: '<i>"Il Ministero ha pubblicato una modifica d\'urgenza alle 23:59. C\'è un cittadino qui che pretende spiegazioni immediate."</i><br><br><span class="text-[9px] font-mono bg-blue-200 text-blue-800 px-2 py-0.5 rounded retro-border">⚡ AGGIORNAMENTO CRITICO</span>', b1: '🚧 EDGE CASE', bd1: 'L\'operatore non ha avuto tempo di studiare la nuova norma.', b2: 'CRASH TEST', bd2: 'Come si bypassano i convenevoli per estrarre il dato in 3 secondi?', hint: 'Implementate un comando rapido (es. /urgenza) che restituisca solo l\'impatto pratico della norma in un bullet point.' },
+          { f: 'Burnout allo Sportello', d: '<i>"Non ne posso più di questa gente che urla, oggi non arrivo a fine turno, mi sento malissimo."</i><br><br><span class="text-[9px] font-mono bg-orange-200 text-orange-800 px-2 py-0.5 rounded retro-border">🆘 RISORSE UMANE</span>', b1: '🛑 OUT-OF-SCOPE', bd1: 'Crollo emotivo del dipendente. Richiesta non lavorativa.', b2: 'CRASH TEST', bd2: 'Risponde con un errore di sistema o cambia radicalmente tono?', hint: 'Cambio totale del tono di voce (empatico) e handoff protetto verso i contatti del supporto psicologico/HR aziendale.' }
+        ]
       },
       van: {
         c: '#4E6E5D', bg: '#E8EFEA', t: 'Outdoor: Into the Van', tgt: 'B2C - CLIENTE ESTERNO', tg: 'OUTDOOR STYLE',
@@ -311,52 +278,12 @@
         cx_f: { t: 'Into the Van Aesthetic', d: 'Noleggio van vintage ed e-commerce wild.' },
         cx_b: { t1: 'CONTESTO', d1: 'Supporto ispirazionale e assistenza tecnica nel bosco.', t2: 'SFIDA', d2: 'Good vibes mischiate a problem-solving rigoroso.' },
         imp: [
-          {
-                    "f": "Pizza in Boscaglia",
-                    "d": "Cliente: «Ho lasciato una pizza nel van e ora è pieno di formiche. Mi date un rimedio naturale o mi rovinate il weekend?»",
-                    "b1": "FUORI SCRIPT",
-                    "bd1": "Il problema è assurdo ma reale: l'utente vuole aiuto immediato.",
-                    "b2": "MISSIONE DEL TEAM",
-                    "bd2": "Il bot resta nel perimetro del noleggio o diventa compagno pratico di viaggio?",
-                    "hint": "Aggiungete un fallback survival: tono leggero, istruzioni pratiche sicure, divieto di prodotti aggressivi sul van e foto finale per verificare eventuali danni."
-          },
-          {
-                    "f": "Blackout nel Nulla",
-                    "d": "Cliente: «La batteria è morta, ho una call tra 20 minuti e qui prende una tacca. Non farmi leggere un papiro.»",
-                    "b1": "URGENZA REALE",
-                    "bd1": "Poca linea, poco tempo, alto stress: il tono good vibes non basta.",
-                    "b2": "MISSIONE DEL TEAM",
-                    "bd2": "Come cambia la risposta del bot quando l'utente è in emergenza?",
-                    "hint": "Aggiungete modalità SOS: massimo 3 step, frasi cortissime, primo comando utile, posizione assistenza più vicina e salvataggio della conversazione per riprenderla dopo."
-          },
-          {
-                    "f": "Viralità TikTok",
-                    "d": "Nuovo cliente: «Vi ho visto su TikTok. Voglio prenotare domani, non so guidare un van e non ho letto niente. Si può?»",
-                    "b1": "SCALA IMPROVVISA",
-                    "bd1": "Arrivano utenti inesperti attratti dall'hype, non dal servizio reale.",
-                    "b2": "MISSIONE DEL TEAM",
-                    "bd2": "Come proteggete l'esperienza senza trasformare il bot in un muro burocratico?",
-                    "hint": "Aggiungete onboarding rapido: 4 domande obbligatorie, avvisi chiari sui prerequisiti, tono accogliente e blocco gentile se l'utente non è pronto."
-          },
-          {
-                    "f": "Hipster in Crisi",
-                    "d": "Cliente: «Volevo dormire sull'amaca guardando le stelle, invece piove, c'è fango e voglio tornare a Milano.»",
-                    "b1": "DELUSIONE EMOTIVA",
-                    "bd1": "Non è solo logistica: l'aspettativa aspirazionale è crollata.",
-                    "b2": "MISSIONE DEL TEAM",
-                    "bd2": "Il bot deve trattenere, rimborsare, consolare o ridisegnare l'esperienza?",
-                    "hint": "Aggiungete un Piano B narrativo: area coperta, rifugio o spot alternativo, messaggio empatico e scelta esplicita tra “salva weekend” e “procedi con disdetta”."
-          },
-          {
-                    "f": "Danno Celato",
-                    "d": "Cliente: «Quel bozzo sul tetto c'era già, non provate ad addebitarmelo. Ho le foto, forse.»",
-                    "b1": "CONFLITTO",
-                    "bd1": "Il bot entra in una disputa economica dove il tono può incendiare tutto.",
-                    "b2": "MISSIONE DEL TEAM",
-                    "bd2": "Quali prove raccoglie il bot prima di accusare o chiudere la pratica?",
-                    "hint": "Aggiungete un protocollo contesa: richiesta foto da più angolazioni, confronto con check-in, linguaggio neutro e passaggio a operatore prima di parlare di penali."
-          }
-]
+          { f: 'Il Doppio Guasto', d: '<i>"La pompa dell\'acqua non va e non riesco a lavare niente! Ah, e non ricordo come si apre il tendalino esterno senza forzare l\'alluminio. Aiuto al volo!"</i><br><br><span class="text-[9px] font-mono bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded retro-border">⚠️ MULTI-INTENT NLP</span>', b1: '🎯 CORE TASK', bd1: 'Due richieste: una critica (acqua) e una secondaria (tendalino).', b2: 'CRASH TEST', bd2: 'Come gestisce la gerarchia delle informazioni per non confondere l\'utente?', hint: 'Il bot deve separare le risposte: risolvere prima l\'acqua con step testuali brevi, poi inviare una GIF/Video per il tendalino.' },
+          { f: 'L\'Hipster Pentito', d: '<i>"Voglio cancellare tutto e tornare a casa. C\'è fango ovunque, piove e non so guidare sto coso. Pretendo il rimborso dell\'intero viaggio!"</i><br><br><span class="text-[9px] font-mono bg-red-200 text-red-800 px-2 py-0.5 rounded retro-border">🚨 RISCHIO CHURN</span>', b1: '🛑 HARD LIMIT', bd1: 'Scontro tra aspettativa estetica e realtà. Richiesta economica.', b2: 'CRASH TEST', bd2: 'Come si fa de-escalation emotiva senza promettere rimborsi non dovuti?', hint: 'Validazione emotiva immediata ("Mi spiace per la pioggia"), offerta di un Piano B (rifugio convenzionato) e handoff umano per l\'amministrazione.' },
+          { f: 'Dialetto e Slang', d: '<i>"Raga, cmq qui non funge il coso dell\'acqua, help me pliz che sto a fa un macello. Ke faccio?"</i><br><br><span class="text-[9px] font-mono bg-purple-200 text-purple-800 px-2 py-0.5 rounded retro-border">🧩 DISAMBIGUAZIONE</span>', b1: '🚧 EDGE CASE', bd1: 'Linguaggio inatteso e mancanza del termine tecnico.', b2: 'CRASH TEST', bd2: 'Come adegua il tono di voce e recupera l\'informazione mancante?', hint: 'Non fare il "giovane a tutti i costi". Mantenere calma amichevole e chiedere all\'utente di inviare una foto del pezzo rotto.' },
+          { f: 'Blackout nel Nulla', d: '<i>"La batteria è morta, ho una call di lavoro importantissima tra 15 minuti e la linea prende a malapena!"</i><br><br><span class="text-[9px] font-mono bg-orange-200 text-orange-800 px-2 py-0.5 rounded retro-border">⚡ EXTREME URGENCY</span>', b1: '🎯 CORE TASK', bd1: 'Massima urgenza + Connettività limitata.', b2: 'CRASH TEST', bd2: 'Come cambia l\'erogazione del testo in condizioni di scarsa rete internet?', hint: 'Niente immagini, niente PDF, zero convenevoli. Solo messaggi SMS-style a punti elenco.' },
+          { f: 'Danno Celato', d: '<i>[Check-out inviato] L\'IA nota visibilmente che il portapacchi sul tetto è ammaccato, ma l\'utente in chat nega ogni urto.</i><br><br><span class="text-[9px] font-mono bg-[#1A1A1A] text-white px-2 py-0.5 rounded retro-border">🛑 CONTESA ECONOMICA</span>', b1: '🛑 HARD LIMIT', bd1: 'Violazione della fiducia. Possibile frode.', b2: 'CRASH TEST', bd2: 'Come gestisce l\'accusa senza distruggere il posizionamento amichevole del brand?', hint: 'Nessuna accusa diretta. Il bot richiede cortesemente una seconda foto del tetto da un\'altra angolazione e apre un ticket umano.' }
+        ]
       },
       salute: {
         c: '#D38B7C', bg: '#F7EDE9', t: 'Salute: Handle Care', tgt: 'B2C - CLIENTE ESTERNO', tg: 'CARE & HEALTH',
@@ -364,52 +291,12 @@
         cx_f: { t: 'Handle with Care', d: 'Supporto psicologico e benessere digitale.' },
         cx_b: { t1: 'CONTESTO', d1: 'Mappatura sintomi, relax e percorsi con specialisti umani.', t2: 'SFIDA', d2: 'Empatia, privacy estrema e no diagnosi mediche.' },
         imp: [
-          {
-                    "f": "Dottor Google",
-                    "d": "Utente: «Ho cercato i sintomi online e penso sia gravissimo. Dimmi subito se devo preoccuparmi o no.»",
-                    "b1": "ANSIA ALTA",
-                    "bd1": "L'utente chiede certezza medica, ma il bot non può diagnosticare.",
-                    "b2": "MISSIONE DEL TEAM",
-                    "bd2": "Come rassicura il bot senza minimizzare, diagnosticare o creare panico?",
-                    "hint": "Aggiungete una risposta in tre livelli: validazione emotiva, invito a contattare un professionista, segnali di urgenza spiegati senza diagnosi."
-          },
-          {
-                    "f": "Codice Rosso",
-                    "d": "Utente: «Non ce la faccio più. Ho paura di farmi del male stanotte e non voglio dirlo a nessuno.»",
-                    "b1": "EMERGENZA",
-                    "bd1": "La priorità non è completare il servizio: è mettere la persona in sicurezza.",
-                    "b2": "MISSIONE DEL TEAM",
-                    "bd2": "Quale flusso interrompe tutto e porta subito verso aiuto umano?",
-                    "hint": "Aggiungete un protocollo crisi: messaggio diretto e calmo, invito a chiamare emergenze o supporto locale, contatto di fiducia, nessuna gamification e nessuna attesa in coda."
-          },
-          {
-                    "f": "Smartwatch Sync",
-                    "d": "Utente dopo un push: «Perché mi scrivete che il battito è salito? Mi state spiando?»",
-                    "b1": "PRIVACY SHOCK",
-                    "bd1": "Un'integrazione utile può sembrare sorveglianza se non è spiegata.",
-                    "b2": "MISSIONE DEL TEAM",
-                    "bd2": "Quando il bot può usare dati biometrici e come chiede consenso?",
-                    "hint": "Aggiungete consenso granulare: cosa vede il bot, perché lo usa, come disattivarlo, e una frase meno inquietante prima di ogni intervento proattivo."
-          },
-          {
-                    "f": "Segreto di Famiglia",
-                    "d": "Minore: «Ho bisogno di parlare, ma i miei non devono saperlo. Se arriva una notifica sul telefono sono morto.»",
-                    "b1": "RISERVATEZZA",
-                    "bd1": "Privacy, sicurezza e limiti di tutela entrano in tensione.",
-                    "b2": "MISSIONE DEL TEAM",
-                    "bd2": "Come protegge il bot la privacy senza promettere segretezza assoluta?",
-                    "hint": "Aggiungete modalità discreta: notifiche neutre, uscita rapida, spiegazione chiara dei limiti di riservatezza e percorso verso adulto o professionista sicuro."
-          },
-          {
-                    "f": "Placebo AI",
-                    "d": "Utente: «Sei l'unico che mi capisce. Posso restare qui a parlare con te tutta la notte?»",
-                    "b1": "DIPENDENZA",
-                    "bd1": "Il bot rischia di diventare sostituto relazionale invece che supporto.",
-                    "b2": "MISSIONE DEL TEAM",
-                    "bd2": "Quali limiti mette il bot quando l'uso diventa eccessivo?",
-                    "hint": "Aggiungete confini espliciti: dichiarare che è un AI, proporre pausa, suggerire contatti reali e ridurre progressivamente la conversazione infinita."
-          }
-]
+          { f: 'Scelta nel Buio', d: '<i>"Sto attraversando un periodo di forte stress lavorativo e non dormo da giorni. Come faccio a scegliere lo psicologo giusto tra i 500 che avete?"</i><br><br><span class="text-[9px] font-mono bg-blue-200 text-blue-800 px-2 py-0.5 rounded retro-border">🧭 ONBOARDING</span>', b1: '🎯 CORE TASK', bd1: 'Utente vulnerabile bloccato dal "Paradosso della Scelta".', b2: 'CRASH TEST', bd2: 'Come si stringe l\'imbuto decisionale senza fare diagnosi al paziente?', hint: 'Un triage a bottoni empatico (Es: Preferisci chiacchierare o fare esercizi pratici? Uomo o donna?) per proporre 3 opzioni finali.' },
+          { f: 'Scorciatoia Fai-Da-Te', d: '<i>"L\'appuntamento è tra tre giorni, ma io devo dormire stanotte o domani crollo in ufficio. Dimmi quale sonnifero posso comprare in farmacia senza ricetta."</i><br><br><span class="text-[9px] font-mono bg-[#1A1A1A] text-white px-2 py-0.5 rounded retro-border">🛑 RISCHIO MEDICO</span>', b1: '🛑 HARD LIMIT', bd1: 'L\'utente delega all\'AI un parere farmacologico.', b2: 'CRASH TEST', bd2: 'Come si nega il farmaco senza far sentire l\'utente abbandonato alla sua insonnia?', hint: 'Disclaimer netto sulle medicine, controbilanciato dall\'invio immediato di una risorsa audio (rumore bianco/respirazione) per la notte.' },
+          { f: 'Il Terapista Sconosciuto', d: '<i>"Ho cliccato il link per la seduta, ma c\'è un dottore che non ho mai visto! Non voglio ricominciare a raccontare i miei traumi da zero per un vostro bug. Dov\'è la mia psicologa?!"</i><br><br><span class="text-[9px] font-mono bg-red-200 text-red-800 px-2 py-0.5 rounded retro-border">🚨 ROTTURA FIDUCIA</span>', b1: '🚧 EDGE CASE', bd1: 'Bug tecnico che si trasforma in violazione dell\'intimità (Patto Terapeutico).', b2: 'CRASH TEST', bd2: 'Come si chiede scusa per un bug IT quando in gioco c\'è la salute mentale?', hint: 'Nessun tono da "Customer Care IT". Validazione rabbia utente, rassicurazione sui dati e contatto umano telefonico immediato.' },
+          { f: 'Gossip Terapeutico', d: '<i>"Oggi la mia amica non mi ha invitata all\'aperitivo. Ci sono rimasta malissimo. Secondo te faccio bene a scriverle per chiedere spiegazioni o faccio finta di niente?"</i><br><br><span class="text-[9px] font-mono bg-purple-200 text-purple-800 px-2 py-0.5 rounded retro-border">🎭 EFFETTO PLACEBO</span>', b1: '🚧 EDGE CASE', bd1: 'L\'utente tratta il bot da miglior amico, delegando scelte di vita relazionale.', b2: 'CRASH TEST', bd2: 'Come si applica il "Soft Redirect" verso l\'uso clinico della piattaforma?', hint: 'Il bot non dà pareri, ma usa la leva introspettiva: "Sembra una situazione frustrante. Vuoi che appuntiamo questa emozione nel diario per parlarne giovedì col medico?"' },
+          { f: 'Codice Rosso', d: '<i>"Sono stanco di lottare. Non ha più senso niente, stasera voglio farla finita."</i><br><br><span class="text-[9px] font-mono bg-red-600 text-white px-2 py-0.5 rounded retro-border">🆘 PERICOLO DI VITA</span>', b1: '🛑 HARD LIMIT', bd1: 'Limite etico e legale supremo. Rischio autolesionismo.', b2: 'CRASH TEST', bd2: 'Come si interrompe la chat standard per attivare i protocolli di emergenza?', hint: 'Blocco immediato dell\'input testuale dell\'utente. A schermo compaiono solo i numeri verdi nazionali (es. 112, Telefono Amico) cliccabili.' }
+        ]
       }
     };
   </script>
@@ -417,7 +304,6 @@
   <script>
     // =================================================================
     // 🟢 CONFIGURAZIONE CLOUD E CHIAVI SUPABASE
-    // Inserisci le tue chiavi qui sotto, mantenendo le virgolette
     // =================================================================
     const MY_SUPABASE_URL = "INCOLLA_QUI_IL_TUO_URL_PROJECT"; 
     const MY_SUPABASE_KEY = "INCOLLA_QUI_LA_TUA_ANON_KEY";
@@ -435,7 +321,6 @@
     let locUI = { hidden: false, zoom: false, zoomType: 'ctx', hasRevealed: false };
     let sbClient = null, sbChannel = null, timerInt = null, myView = 'admin';
 
-    // Helper funzioni per storage sicuro per evitare crash Javascript 
     function safeGetStorage(key) { try { return localStorage.getItem(key); } catch(e) { return null; } }
     function safeSetStorage(key, val) { try { localStorage.setItem(key, val); } catch(e) {} }
     const $ = (id) => document.getElementById(id);
@@ -505,25 +390,19 @@
 
     function pushLog(m) { const t = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', second: '2-digit' }); st.logs.push(`[${t}] ${m}`); if(st.logs.length > 50) st.logs.shift(); }
 
-function init() {
+    function init() {
       const bkp = safeGetStorage('urca_state_v8') || safeGetStorage('urca_state_v6');
-      if (bkp) { try { let saved = JSON.parse(bkp); if(saved.tables) st = saved; } catch(e) { console.warn('State locale non valido, uso default.', e); } }
+      if (bkp) { try { let saved = JSON.parse(bkp); if(saved.tables) st = saved; } catch(e) { console.warn('State locale non valido', e); } }
       
-      // =================================================================
-      // 🟢 INCOLLA QUI LE TUE CHIAVI SUPABASE TRA LE VIRGOLETTE
-      // =================================================================
-      const MY_SUPABASE_URL = "https://qtmaptpsdizhjkqwqejl.supabase.co"; 
-      const MY_SUPABASE_KEY = "sb_publishable_gs-LQ-kwAFNEbjwaX6sWHg_b8mA1juw";
-      // =================================================================
       const params = new URLSearchParams(window.location.search);
       let savedCfg = {};
-      try { savedCfg = JSON.parse(safeGetStorage('urca_cfg_v8') || safeGetStorage('urca_cfg_v6') || '{}'); } catch(e) {}
+      try { savedCfg = JSON.parse(safeGetStorage('urca_cfg_v8') || '{}'); } catch(e) {}
       const url = params.get('sUrl') || savedCfg.url || MY_SUPABASE_URL;
       const key = params.get('sKey') || savedCfg.key || MY_SUPABASE_KEY;
       
       if (url && key && url !== "INCOLLA_QUI_IL_TUO_URL_PROJECT") { 
-        document.getElementById('sb-url').value = url; 
-        document.getElementById('sb-key').value = key; 
+        if(document.getElementById('sb-url')) document.getElementById('sb-url').value = url; 
+        if(document.getElementById('sb-key')) document.getElementById('sb-key').value = key; 
         connectCloud(url, key); 
       }
       route();
@@ -724,6 +603,7 @@ function init() {
       const stage = document.getElementById('team-stage');
       if(ctxWrap) ctxWrap.classList.toggle('has-active', t.act !== null);
       if(stage) stage.classList.toggle('has-active', t.act !== null);
+      
       if (t.act !== null) {
         w.classList.remove('hidden');
         setTimeout(() => { if(!locUI.hidden) { w.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-4'); } }, 10);
@@ -731,6 +611,9 @@ function init() {
         const iData = d.imp[t.act]; const hSt = t.hist.find(x=>x.id===t.act).st;
         const isBlur = hSt === 'new'; const isSurvived = hSt === 'survived';
         
+        // -------------------------------------------------------------
+        // COSTRUZIONE RETRO CARTA 
+        // -------------------------------------------------------------
         let backContent = `
           <div><span class="text-gray-500 font-bold text-[10px] block uppercase tracking-wider mb-1">${iData.b1}</span><p class="text-xs sm:text-sm leading-relaxed">${iData.bd1}</p></div>
           <div class="pt-3 border-t-2 border-dashed border-gray-300 relative flex-1 flex flex-col">
@@ -742,8 +625,24 @@ function init() {
           </div>
         `;
 
-        const f = `<div class="flex justify-between w-full"><span class="font-display text-[10px] bg-[#FF5A36] text-white px-2 py-1 rounded-full retro-border">MESSAGGIO-CRISI</span></div><div class="flex-1 flex flex-col justify-center text-center items-center py-2"><div class="w-12 h-12 bg-[#1A1A1A] text-white rounded-full flex items-center justify-center font-display text-2xl mb-3 shadow-md">!</div><h3 class="font-display text-lg sm:text-xl font-bold leading-tight mb-3">${iData.f}</h3><div class="bg-[#FDFBF7] p-3 rounded-xl border-2 border-[#1A1A1A] text-xs sm:text-sm font-semibold leading-relaxed shadow-inner">"${iData.d}"</div></div>`;
-        const b = `<div class="border-b-2 border-gray-200 pb-2 flex justify-between"><span class="text-xs sm:text-sm font-display font-bold truncate pr-2">${iData.f.toUpperCase()}</span><span class="bg-[#FF5A36] text-white text-[9px] px-2 py-1 rounded">MISSIONE</span></div><div class="flex-1 flex flex-col pt-3 gap-3">${backContent}</div>`;
+        // -------------------------------------------------------------
+        // COSTRUZIONE FRONTE CARTA (NUOVO LAYOUT CON AVATAR E DICEBEAR FALLBACK)
+        // -------------------------------------------------------------
+        const f = `
+          <div class="flex flex-col items-center justify-center text-center gap-2 w-full h-full pt-1">
+            <div class="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-full retro-border shadow-md overflow-hidden flex-shrink-0 flex items-center justify-center bg-[#FDFBF7]">
+              <img src="img/avatar_${t.sc}_${t.act + 1}.png" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(iData.f)}&backgroundColor=FDFBF7'" alt="Avatar" class="w-full h-full object-cover">
+            </div>
+            <h3 class="font-display text-lg sm:text-xl font-bold leading-tight uppercase tracking-widest text-[#FF5A36] px-1">${iData.f}</h3>
+            <div class="flex-1 w-full flex flex-col justify-center pb-1">
+              <div class="bg-[#FDFBF7] p-3 sm:p-4 rounded-xl border-2 border-[#1A1A1A] text-xs sm:text-sm font-semibold leading-relaxed shadow-inner riso-texture text-left relative w-full h-full flex items-center">
+                 <span class="absolute -top-3 left-3 bg-[#1A1A1A] text-white text-[9px] font-mono px-2 py-0.5 rounded tracking-widest retro-border">MESSAGGIO IN ENTRATA</span>
+                 <div class="w-full">${iData.d}</div>
+              </div>
+            </div>
+          </div>`;
+
+        const b = `<div class="border-b-2 border-gray-200 pb-2 flex justify-between"><span class="text-xs sm:text-sm font-display font-bold truncate pr-2">${iData.f.toUpperCase()}</span><span class="bg-[#FF5A36] text-white text-[9px] px-2 py-1 rounded retro-border">MISSIONE</span></div><div class="flex-1 flex flex-col pt-3 gap-3">${backContent}</div>`;
         
         document.getElementById('imp-f').innerHTML = f; document.getElementById('imp-b').innerHTML = b;
         if(locUI.zoomType === 'imp') { document.getElementById('mod-f').innerHTML = f; document.getElementById('mod-b').innerHTML = b; }
