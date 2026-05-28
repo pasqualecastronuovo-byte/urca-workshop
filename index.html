@@ -3,696 +3,1048 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>URCA! Live - Workshop Engine V9 (Master Edition)</title>
-  
+  <title>URCA! Live - Workshop Engine V9</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
-  
   <script>
     tailwind.config = { theme: { extend: { fontFamily: { sans: ['"Plus Jakarta Sans"'], display: ['"Space Grotesk"'], mono: ['"Fira Code"'] } } } }
   </script>
-
   <style>
-    /* Texture & UI */
     .riso-texture { background-image: radial-gradient(rgba(26,26,26,0.08) 1px, transparent 0); background-size: 6px 6px; background-color: #FDFBF7; }
     .retro-border { border: 4px solid #1A1A1A; }
     .retro-shadow-sm { box-shadow: 3px 3px 0px 0px #1A1A1A; }
-    .retro-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0px 0px #1A1A1A; }
-    
-    /* Layout Mobile First */
+    .retro-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0px 0px #1A1A1A !important; }
     .aspect-card { aspect-ratio: 63 / 88; width: 100%; max-width: 340px; margin: 0 auto; }
     .card-perspective { perspective: 1200px; width: 100%; }
-    .card-inner { width: 100%; height: 100%; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); transform-style: preserve-3d; position: relative; }
+    .card-inner { width: 100%; height: 100%; transition: transform 0.6s cubic-bezier(0.4,0,0.2,1); transform-style: preserve-3d; position: relative; }
     .card-inner.flipped { transform: rotateY(180deg); }
-    .card-front, .card-back { backface-visibility: hidden; position: absolute; top:0; left:0; width:100%; height:100%; border-radius:24px; }
+    .card-front, .card-back { backface-visibility: hidden; -webkit-backface-visibility: hidden; position: absolute; top:0; left:0; width:100%; height:100%; border-radius:24px; overflow: hidden; }
     .card-back { transform: rotateY(180deg); }
-
-    /* Fix Scroll & Z-index */
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     .blur-content { filter: blur(6px); user-select: none; pointer-events: none; opacity: 0.4; }
-
     @keyframes pulse-ring { 0% { transform: scale(0.8); opacity: 0.5; } 100% { transform: scale(1.5); opacity: 0; } }
     .sos-pulse::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background: #fbbf24; animation: pulse-ring 2s infinite; z-index: -1; }
     @keyframes slide-in-top { 0% { transform: translateY(-100%) translateX(-50%); opacity: 0; } 100% { transform: translateY(0) translateX(-50%); opacity: 1; } }
-    .toast-anim { animation: slide-in-top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-
-    .card-zoom-btn { position: absolute; top: 12px; right: 12px; background: rgba(255,255,255,0.9); border: 2px solid #1A1A1A; border-radius: 99px; padding: 4px 10px; font-size: 10px; font-weight: bold; z-index: 50; cursor: pointer; display: flex; gap: 4px; align-items: center; box-shadow: 2px 2px 0px #1A1A1A; }
-    .card-zoom-btn:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0px #1A1A1A; }
+    .toast-anim { animation: slide-in-top 0.4s cubic-bezier(0.175,0.885,0.32,1.275) forwards; }
+    @keyframes alarm-flash { 0%,100% { background-color: #FDFBF7; } 50% { background-color: #FF5A36; } }
+    .alarm-flash { animation: alarm-flash 0.4s ease 3; }
+    @keyframes card-appear { 0% { opacity:0; transform: translateY(32px) scale(0.96); } 100% { opacity:1; transform: translateY(0) scale(1); } }
+    .card-appear { animation: card-appear 0.5s cubic-bezier(0.175,0.885,0.32,1.275) forwards; }
+    .card-zoom-btn { position: absolute; top: 12px; right: 12px; background: rgba(255,255,255,0.92); border: 2px solid #1A1A1A; border-radius: 99px; padding: 4px 10px; font-size: 10px; font-weight: bold; z-index: 50; cursor: pointer; display: flex; gap: 4px; align-items: center; box-shadow: 2px 2px 0px #1A1A1A; }
+    .card-zoom-btn:active { transform: translate(1px,1px); box-shadow: 1px 1px 0px #1A1A1A; }
+    /* Ensure both views are true display:flex when not hidden */
+    #view-admin.active { display: flex; }
+    #view-team.active  { display: flex; }
   </style>
 </head>
 <body class="font-sans text-[#1A1A1A] bg-[#FDFBF7] w-full min-h-[100dvh] overflow-hidden select-none relative">
 
-  <div id="view-admin" class="hidden absolute inset-0 bg-[#FDFBF7] flex-col md:flex-row z-10">
-    <div id="admin-toasts" class="fixed top-4 left-1/2 -translate-x-1/2 z-[999] flex flex-col gap-2 w-11/12 max-w-sm"></div>
+<!-- ===== ADMIN VIEW ===== -->
+<div id="view-admin" class="hidden absolute inset-0 bg-[#FDFBF7] flex-col md:flex-row z-10">
+  <div id="admin-toasts" class="fixed top-4 left-1/2 -translate-x-1/2 z-[999] flex flex-col gap-2 w-11/12 max-w-sm pointer-events-none"></div>
 
-    <aside class="w-full md:w-[360px] bg-white border-r-4 border-[#1A1A1A] p-5 flex flex-col gap-4 z-20 shadow-xl overflow-y-auto">
-      <div class="flex items-center justify-between">
-        <div class="bg-[#FF5A36] text-white font-display font-bold text-[10px] px-2 py-1 rounded retro-border uppercase tracking-widest">URCA! Master Regia</div>
-        <div id="sync-status" class="text-[9px] font-mono px-2 py-0.5 rounded bg-yellow-100 text-yellow-800 border border-yellow-400">🟡 LOCALE</div>
-      </div>
-      
-      <div class="bg-[#FDFBF7] retro-border rounded-xl p-4 space-y-3">
-        <div class="flex justify-between items-center">
-          <span class="text-xs font-bold text-gray-500 font-display">TIMER GLOBALE</span>
-          <span id="ad-timer-txt" class="font-mono bg-white px-2 py-1 border-2 border-[#1A1A1A] text-lg font-bold rounded">10:00</span>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <button id="ad-btn-play" onclick="adminToggleTimer()" class="retro-btn bg-green-300 text-[11px] font-bold py-2 rounded-lg retro-border">▶ PLAY / PAUSA</button>
-          <button onclick="adminResetTimer()" class="retro-btn bg-gray-200 text-[11px] font-bold py-2 rounded-lg retro-border">🔄 RESET</button>
-        </div>
-        <div class="flex gap-2 items-center pt-2 border-t border-gray-300">
-          <input type="number" id="custom-min" placeholder="Minuti" class="w-full border-2 border-[#1A1A1A] rounded p-1.5 text-xs text-center font-mono">
-          <button onclick="adminSetCustomTimer()" class="bg-[#1A1A1A] text-white text-[10px] font-bold px-3 py-2 rounded retro-btn whitespace-nowrap">IMPOSTA</button>
-        </div>
-      </div>
-
-      <div class="bg-gray-50 retro-border rounded-xl p-3 flex flex-col gap-2">
-        <h4 class="font-display font-bold text-[10px] text-gray-800 uppercase">👥 Gestione Tavoli</h4>
-        <div class="flex flex-col gap-1.5 mt-1">
-          <input type="text" id="new-t-name" placeholder="Nome (es. Tavolo 1)" class="w-full text-[10px] p-1.5 border border-[#1A1A1A] rounded">
-          <select id="new-t-scen" class="w-full text-[10px] p-1.5 border border-[#1A1A1A] rounded bg-white">
-            <option value="burocrazia">PA (Burocrazia Guide)</option>
-            <option value="van">Retail (Into the Van)</option>
-            <option value="salute">Health (Handle with Care)</option>
-          </select>
-          <button onclick="adminAddTable()" class="w-full bg-[#1A1A1A] text-white font-display text-[10px] font-bold py-2 rounded border border-[#1A1A1A] retro-btn">➕ AGGIUNGI TAVOLO</button>
-        </div>
-      </div>
-
-      <div class="mt-auto border-t-2 border-gray-200 pt-3">
-        <label class="flex items-center gap-2 cursor-pointer bg-yellow-50 p-2 rounded-lg border border-yellow-300">
-          <input type="checkbox" id="ad-check-crash" onchange="adminToggleFeature('allowCrash', this.checked)" class="w-5 h-5 accent-[#FF5A36]">
-          <span class="text-[10px] font-bold text-gray-700 leading-tight">Sblocca estrazione randomica ai Team (Modalità Libera)</span>
-        </label>
-      </div>
-    </aside>
-
-    <main class="flex-1 bg-[#F5F2EB] p-5 overflow-y-auto flex flex-col gap-4 riso-texture h-full">
-      <div id="ad-monitors" class="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-5 flex-1 content-start"></div>
-
-      <div class="bg-[#1A1A1A] retro-border rounded-xl p-4 flex flex-col shadow-lg h-[22vh] min-h-[160px] shrink-0">
-        <div class="flex justify-between items-center border-b border-gray-700 pb-2 mb-2">
-          <span class="text-[11px] font-mono font-bold uppercase text-green-400 flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-green-500 animate-ping"></span> Live Log Terminal</span>
-          <button onclick="clearLogs()" class="text-[9px] font-mono bg-gray-800 text-gray-300 px-2 py-1 rounded border border-gray-600 hover:bg-gray-700 transition">Pulisci Log</button>
-        </div>
-        <div id="ad-terminal" class="flex-1 font-mono text-[10px] overflow-y-auto space-y-1.5 terminal-scroll pr-2 text-gray-300"></div>
-      </div>
-    </main>
-  </div>
-
-  <div id="view-team" class="hidden absolute inset-0 flex-col bg-[#FDFBF7] riso-texture z-10 overflow-hidden">
-    
-    <div id="tm-toasts" class="fixed top-24 left-1/2 -translate-x-1/2 z-[999] flex flex-col gap-2 w-11/12 max-w-sm pointer-events-none"></div>
-
-    <div id="tm-onboarding" class="absolute inset-0 bg-[#0A0A0A] z-[200] flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-700 scanlines group" onclick="hideOnboarding()">
-      <div class="animate-pulse transform transition-transform group-hover:scale-110">
-        <div class="w-20 h-20 bg-transparent border-4 border-[#00FF41] rounded-lg flex items-center justify-center text-[#00FF41] font-display text-4xl font-bold mx-auto mb-6 shadow-[0_0_20px_#00FF41]">🔒</div>
-        <h1 class="font-display text-4xl sm:text-5xl font-bold text-white mb-4 tracking-widest px-4 leading-tight">NODO BLOCCATO</h1>
-        <p class="font-mono text-[#00FF41] text-xs tracking-widest uppercase bg-[#00FF41]/10 px-4 py-2 rounded">>> Clicca per inizializzare <<</p>
-      </div>
-    </div>
-
-    <header class="w-full bg-white/95 backdrop-blur border-b-4 border-[#1A1A1A] p-4 flex flex-col gap-3 shadow-sm shrink-0 z-40">
-      <div class="flex justify-between items-center w-full">
-        <div class="flex items-center gap-2 max-w-[60%]">
-          <div class="bg-[#1A1A1A] text-white font-display font-bold text-[10px] px-2 py-1 rounded" id="tm-view-id">TEAM</div>
-          <h2 id="tm-title" class="font-display text-sm sm:text-lg font-bold leading-none truncate">...</h2>
-        </div>
-        <div id="tm-timer" class="font-mono font-bold text-2xl sm:text-3xl bg-yellow-100 border-2 border-[#1A1A1A] px-3 py-1 rounded-lg shadow-sm text-center">00:00</div>
-      </div>
-    </header>
-
-    <main id="team-stage" class="flex-1 overflow-y-auto w-full px-4 pt-6 pb-40 flex flex-col items-center gap-8 relative scroll-smooth no-scrollbar">
-      
-      <div id="tm-wrapper-ctx" class="w-full flex flex-col items-center transition-all duration-500">
-        <div class="card-perspective aspect-card">
-          <div id="tm-card-ctx" class="card-inner shadow-2xl rounded-[24px]">
-            <div id="ctx-f" class="card-front bg-[#FDFBF7] retro-border p-6 flex flex-col justify-between riso-texture relative overflow-hidden">
-              <button onclick="teamZoom(true, 'ctx')" class="card-zoom-btn">🔍 Espandi</button>
-              </div>
-            <div id="ctx-b" class="card-back bg-[#FDFBF7] retro-border p-6 flex flex-col justify-between relative">
-              <button onclick="teamFlipCtx()" class="card-zoom-btn">↩ Gira</button>
-              </div>
-          </div>
-        </div>
-      </div>
-
-      <div id="tm-wrapper-imp" class="hidden w-full flex flex-col items-center transition-all duration-500 opacity-0 transform translate-y-8">
-        <div class="card-perspective aspect-card">
-          <div id="tm-card-imp" class="card-inner shadow-2xl rounded-[24px]">
-            <div id="imp-f" class="card-front bg-white retro-border p-6 flex flex-col justify-between riso-texture relative">
-              <button onclick="teamFlipImp()" class="card-zoom-btn bg-[#FF5A36] text-white">↩ RISOLVI LA SFIDA</button>
-              </div>
-            <div id="imp-b" class="card-back bg-[#FDFBF7] retro-border p-6 flex flex-col justify-between relative">
-              <button onclick="teamFlipImp()" class="card-zoom-btn">↩ Gira</button>
-              </div>
-          </div>
-        </div>
-      </div>
-    </main>
-
-    <footer id="tm-team-dock" class="fixed bottom-4 left-4 right-4 bg-white/95 backdrop-blur border-4 border-[#1A1A1A] p-3 z-50 flex flex-col gap-3 rounded-2xl shadow-[0_10px_25px_rgba(0,0,0,0.15)]">
-      
-      <div class="flex gap-2 w-full">
-        <button onclick="sendSOS()" class="flex-1 retro-btn bg-yellow-400 text-[#1A1A1A] font-display font-bold text-xs p-3 rounded-xl retro-border flex items-center justify-center gap-1 active:scale-95 sos-pulse relative overflow-hidden">
-          <span class="text-base">🆘</span> AIUTO
-        </button>
-        <button id="tm-btn-self" onclick="teamSelfShock()" class="flex-1 retro-btn bg-[#FF5A36] text-white font-display font-bold text-xs p-3 rounded-xl retro-border flex items-center justify-center gap-1 hidden active:scale-95">
-          🎲 PESCA RANDOM
-        </button>
-      </div>
-
-      <div id="tm-inventory-box" class="w-full hidden border-t-2 border-gray-200 pt-2 mt-1">
-        <span class="text-[10px] font-display font-bold uppercase text-gray-500 block mb-2">🗂️ Archivio Incontri (<span id="tm-inv-count">0/3</span>)</span>
-        <div id="tm-inventory-list" class="flex gap-2 overflow-x-auto no-scrollbar snap-x"></div>
-      </div>
-    </footer>
-  </div>
-
-  <div id="modal-zoom" class="fixed inset-0 bg-[#FDFBF7]/95 backdrop-blur-md z-[1000] hidden flex-col items-center justify-center p-4 opacity-0 transition-opacity">
-    <div class="card-perspective w-full max-w-[400px] aspect-card max-h-[85vh]">
-      <div id="modal-inner" class="card-inner shadow-2xl rounded-[24px]">
-        <div id="mod-f" class="card-front bg-white retro-border p-6 flex flex-col justify-between riso-texture">
-          <button onclick="teamZoom(false)" class="card-zoom-btn">✕ CHIUDI</button>
-          <div id="mod-f-content" class="h-full"></div>
-        </div>
-        <div id="mod-b" class="card-back bg-[#FDFBF7] retro-border p-6 flex flex-col justify-between">
-          <button onclick="teamZoom(false)" class="card-zoom-btn">✕ CHIUDI</button>
-          <div id="mod-b-content" class="h-full"></div>
-        </div>
-      </div>
-    </div>
-    <div class="mt-6 flex gap-4">
-      <button onclick="teamFlipModal()" class="retro-btn bg-[#1A1A1A] text-white font-display font-bold px-6 py-3 rounded-xl retro-border">↩ GIRA CARTA</button>
+  <!-- QR MODAL -->
+  <div id="admin-qr-modal" class="hidden fixed inset-0 bg-black/70 z-[900] flex-col items-center justify-center opacity-0 transition-opacity">
+    <div class="bg-white retro-border rounded-2xl p-6 flex flex-col items-center gap-4 max-w-xs w-full mx-4 shadow-2xl">
+      <h3 id="qr-table-name" class="font-display font-bold text-lg text-center"></h3>
+      <img id="qr-image" src="" alt="QR Code" class="w-64 h-64 border-2 border-gray-200 rounded-xl">
+      <p class="text-xs font-mono text-gray-500 text-center">Mostra ai partecipanti per accedere alla sessione</p>
+      <button onclick="closeQR()" class="bg-[#1A1A1A] text-white font-bold px-6 py-2 rounded-xl retro-btn w-full">✕ Chiudi</button>
     </div>
   </div>
 
-  <script>
-    function playSound(type) {
-      try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.connect(gain); gain.connect(ctx.destination);
-        if(type === 'alarm') {
-          osc.type = 'sawtooth'; osc.frequency.setValueAtTime(140, ctx.currentTime); osc.frequency.linearRampToValueAtTime(320, ctx.currentTime + 0.3);
-          gain.gain.setValueAtTime(0.2, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5); osc.start(); osc.stop(ctx.currentTime + 0.5);
-        } else if(type === 'sos') {
-          osc.type = 'sine'; osc.frequency.setValueAtTime(880, ctx.currentTime); osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.2);
-          gain.gain.setValueAtTime(0.1, ctx.currentTime); gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.5); osc.start(); osc.stop(ctx.currentTime + 0.5);
-        } else if(type === 'win') {
-          osc.type = 'square'; osc.frequency.setValueAtTime(440, ctx.currentTime); osc.frequency.setValueAtTime(660, ctx.currentTime + 0.1); osc.frequency.setValueAtTime(880, ctx.currentTime + 0.2);
-          gain.gain.setValueAtTime(0.1, ctx.currentTime); gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.4); osc.start(); osc.stop(ctx.currentTime + 0.4);
+  <aside class="w-full md:w-[360px] bg-white border-r-4 border-[#1A1A1A] p-5 flex flex-col gap-4 z-20 shadow-xl overflow-y-auto shrink-0">
+    <div class="flex items-center justify-between">
+      <div class="bg-[#FF5A36] text-white font-display font-bold text-[10px] px-2 py-1 rounded retro-border uppercase tracking-widest">URCA! Master Regia</div>
+      <div id="sync-status" class="text-[9px] font-mono px-2 py-0.5 rounded bg-yellow-100 text-yellow-800 border border-yellow-400">🟡 LOCALE</div>
+    </div>
+
+    <!-- SUPABASE CONFIG -->
+    <details class="bg-blue-50 retro-border rounded-xl p-3 text-xs">
+      <summary class="font-bold cursor-pointer font-display text-[10px] uppercase">☁️ Connessione Cloud (opzionale)</summary>
+      <div class="mt-3 flex flex-col gap-2">
+        <input type="text" id="sb-url" placeholder="Supabase Project URL" class="w-full border-2 border-[#1A1A1A] rounded p-1.5 text-[10px] font-mono">
+        <input type="text" id="sb-key" placeholder="Supabase Anon Key" class="w-full border-2 border-[#1A1A1A] rounded p-1.5 text-[10px] font-mono">
+        <button onclick="activateCloud()" class="bg-[#1A1A1A] text-white text-[10px] font-bold py-2 rounded retro-btn">CONNETTI CLOUD</button>
+      </div>
+    </details>
+
+    <!-- TIMER -->
+    <div class="bg-[#FDFBF7] retro-border rounded-xl p-4 space-y-3">
+      <div class="flex justify-between items-center">
+        <span class="text-xs font-bold text-gray-500 font-display">TIMER GLOBALE</span>
+        <span id="ad-timer-txt" class="font-mono bg-white px-2 py-1 border-2 border-[#1A1A1A] text-lg font-bold rounded">10:00</span>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <button id="ad-btn-play" onclick="adminToggleTimer()" class="retro-btn bg-green-300 text-[11px] font-bold py-2 rounded-lg retro-border">▶ START</button>
+        <button onclick="adminResetTimer()" class="retro-btn bg-gray-200 text-[11px] font-bold py-2 rounded-lg retro-border">🔄 RESET</button>
+      </div>
+      <div class="flex gap-2 items-center pt-2 border-t border-gray-300">
+        <input type="number" id="custom-min" placeholder="Minuti" min="1" class="w-full border-2 border-[#1A1A1A] rounded p-1.5 text-xs text-center font-mono">
+        <button onclick="adminSetCustomTimer()" class="bg-[#1A1A1A] text-white text-[10px] font-bold px-3 py-2 rounded retro-btn whitespace-nowrap">IMPOSTA</button>
+      </div>
+    </div>
+
+    <!-- GESTIONE TAVOLI -->
+    <div class="bg-gray-50 retro-border rounded-xl p-3 flex flex-col gap-2">
+      <h4 class="font-display font-bold text-[10px] text-gray-800 uppercase">👥 Gestione Tavoli</h4>
+      <div class="flex flex-col gap-1.5 mt-1">
+        <input type="text" id="new-t-name" placeholder="Nome (es. Tavolo 1)" class="w-full text-[10px] p-1.5 border border-[#1A1A1A] rounded">
+        <select id="new-t-scen" class="w-full text-[10px] p-1.5 border border-[#1A1A1A] rounded bg-white">
+          <option value="burocrazia">PA (Burocrazia Guide)</option>
+          <option value="van">Retail (Into the Van)</option>
+          <option value="salute">Health (Handle with Care)</option>
+        </select>
+        <button onclick="adminAddTable()" class="w-full bg-[#1A1A1A] text-white font-display text-[10px] font-bold py-2 rounded border border-[#1A1A1A] retro-btn">➕ AGGIUNGI TAVOLO</button>
+      </div>
+    </div>
+
+    <!-- OPZIONI -->
+    <div class="mt-auto border-t-2 border-gray-200 pt-3">
+      <label class="flex items-center gap-2 cursor-pointer bg-yellow-50 p-2 rounded-lg border border-yellow-300">
+        <input type="checkbox" id="ad-check-crash" onchange="adminToggleFeature(this.checked)" class="w-5 h-5 accent-[#FF5A36]">
+        <span class="text-[10px] font-bold text-gray-700 leading-tight">Sblocca estrazione randomica ai Team (Modalità Libera)</span>
+      </label>
+    </div>
+  </aside>
+
+  <main class="flex-1 bg-[#F5F2EB] p-5 overflow-y-auto flex flex-col gap-4 riso-texture h-full min-h-0">
+    <div id="ad-monitors" class="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-5 content-start"></div>
+    <!-- TERMINAL -->
+    <div class="bg-[#1A1A1A] retro-border rounded-xl p-4 flex flex-col shadow-lg h-[22vh] min-h-[160px] shrink-0">
+      <div class="flex justify-between items-center border-b border-gray-700 pb-2 mb-2">
+        <span class="text-[11px] font-mono font-bold uppercase text-green-400 flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-green-500 animate-ping inline-block"></span> Live Log Terminal</span>
+        <button onclick="clearLogs()" class="text-[9px] font-mono bg-gray-800 text-gray-300 px-2 py-1 rounded border border-gray-600 hover:bg-gray-700 transition">Pulisci</button>
+      </div>
+      <div id="ad-terminal" class="flex-1 font-mono text-[10px] overflow-y-auto space-y-1 pr-2 text-gray-300 no-scrollbar"></div>
+    </div>
+  </main>
+</div>
+
+<!-- ===== TEAM VIEW ===== -->
+<div id="view-team" class="hidden absolute inset-0 flex-col bg-[#FDFBF7] riso-texture z-10 overflow-hidden">
+  <div id="tm-toasts" class="fixed top-24 left-1/2 -translate-x-1/2 z-[999] flex flex-col gap-2 w-11/12 max-w-sm pointer-events-none"></div>
+
+  <!-- ONBOARDING LOCK SCREEN -->
+  <div id="tm-onboarding" class="absolute inset-0 bg-[#0A0A0A] z-[200] flex flex-col items-center justify-center text-center cursor-pointer transition-opacity duration-700" onclick="hideOnboarding()">
+    <div class="animate-pulse">
+      <div class="w-20 h-20 border-4 border-[#00FF41] rounded-lg flex items-center justify-center text-4xl mx-auto mb-6 shadow-[0_0_20px_#00FF41]">🔒</div>
+      <h1 class="font-display text-4xl sm:text-5xl font-bold text-white mb-4 tracking-widest px-4 leading-tight">NODO BLOCCATO</h1>
+      <p class="font-mono text-[#00FF41] text-xs tracking-widest uppercase bg-[#00FF41]/10 px-4 py-2 rounded">>> Clicca per inizializzare <<</p>
+    </div>
+  </div>
+
+  <!-- HEADER -->
+  <header class="w-full bg-white/95 backdrop-blur border-b-4 border-[#1A1A1A] p-4 flex flex-col gap-3 shadow-sm shrink-0 z-40">
+    <div class="flex justify-between items-center w-full">
+      <div class="flex items-center gap-2 max-w-[60%]">
+        <div id="tm-view-id" class="bg-[#1A1A1A] text-white font-display font-bold text-[10px] px-2 py-1 rounded shrink-0">TEAM</div>
+        <h2 id="tm-title" class="font-display text-sm sm:text-lg font-bold leading-none truncate">...</h2>
+      </div>
+      <div id="tm-timer" class="font-mono font-bold text-2xl sm:text-3xl bg-yellow-100 border-2 border-[#1A1A1A] px-3 py-1 rounded-lg shadow-sm text-center hidden">00:00</div>
+    </div>
+  </header>
+
+  <!-- STAGE -->
+  <main id="team-stage" class="flex-1 overflow-y-auto w-full px-4 pt-6 pb-44 flex flex-col items-center gap-8 relative scroll-smooth no-scrollbar">
+    <!-- CONTEXT CARD -->
+    <div id="tm-wrapper-ctx" class="w-full flex flex-col items-center">
+      <div class="card-perspective aspect-card">
+        <div id="tm-card-ctx" class="card-inner shadow-2xl rounded-[24px]">
+          <div class="card-front bg-[#FDFBF7] retro-border riso-texture relative"></div>
+          <div class="card-back bg-[#FDFBF7] retro-border relative"></div>
+        </div>
+      </div>
+    </div>
+    <!-- CHALLENGE CARD (initially hidden) -->
+    <div id="tm-wrapper-imp" class="w-full flex-col items-center hidden">
+      <div class="card-perspective aspect-card">
+        <div id="tm-card-imp" class="card-inner shadow-2xl rounded-[24px]">
+          <div class="card-front bg-white retro-border riso-texture relative"></div>
+          <div class="card-back bg-[#FDFBF7] retro-border relative"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- FOOTER DOCK -->
+  <footer id="tm-team-dock" class="fixed bottom-4 left-4 right-4 bg-white/95 backdrop-blur border-4 border-[#1A1A1A] p-3 z-50 flex flex-col gap-3 rounded-2xl shadow-[0_10px_25px_rgba(0,0,0,0.15)]">
+    <div class="flex gap-2 w-full">
+      <button onclick="sendSOS()" class="flex-1 retro-btn bg-yellow-400 text-[#1A1A1A] font-display font-bold text-xs p-3 rounded-xl retro-border flex items-center justify-center gap-1 active:scale-95 sos-pulse relative overflow-hidden">
+        <span class="text-base">🆘</span> AIUTO
+      </button>
+      <button id="tm-btn-self" onclick="teamSelfShock()" class="flex-1 retro-btn bg-[#FF5A36] text-white font-display font-bold text-xs p-3 rounded-xl retro-border flex items-center justify-center gap-1 hidden active:scale-95">
+        🎲 PESCA RANDOM
+      </button>
+    </div>
+    <div id="tm-inventory-box" class="w-full hidden border-t-2 border-gray-200 pt-2">
+      <span class="text-[10px] font-display font-bold uppercase text-gray-500 block mb-2">🗂️ Archivio Incontri (<span id="tm-inv-count">0/3</span>)</span>
+      <div id="tm-inventory-list" class="flex gap-2 overflow-x-auto no-scrollbar snap-x"></div>
+    </div>
+  </footer>
+</div>
+
+<!-- ===== ZOOM MODAL ===== -->
+<div id="modal-zoom" class="fixed inset-0 bg-[#FDFBF7]/95 backdrop-blur-md z-[1000] hidden flex-col items-center justify-center p-4 opacity-0 transition-opacity">
+  <div class="card-perspective w-full max-w-[400px] aspect-card" style="max-height:75vh;">
+    <div id="modal-inner" class="card-inner shadow-2xl rounded-[24px]">
+      <div id="mod-front" class="card-front bg-white retro-border p-6 flex flex-col riso-texture overflow-y-auto">
+        <button onclick="teamZoom(false)" class="card-zoom-btn">✕ CHIUDI</button>
+      </div>
+      <div id="mod-back" class="card-back bg-[#FDFBF7] retro-border p-6 flex flex-col overflow-y-auto">
+        <button onclick="teamZoom(false)" class="card-zoom-btn">✕ CHIUDI</button>
+      </div>
+    </div>
+  </div>
+  <div class="mt-6 flex gap-4">
+    <button onclick="teamFlipModal()" class="retro-btn bg-[#1A1A1A] text-white font-display font-bold px-6 py-3 rounded-xl retro-border">↩ GIRA CARTA</button>
+    <button onclick="teamZoom(false)" class="retro-btn bg-white text-[#1A1A1A] font-display font-bold px-6 py-3 rounded-xl retro-border">✕ CHIUDI</button>
+  </div>
+</div>
+
+<!-- ===== DATABASE ===== -->
+<script>
+const DB = {
+  burocrazia: {
+    c: '#2C5D63', bg: '#E3EFF0', t: 'PA: Burocrazia', tgt: 'B2E - RISORSA INTERNA',
+    icoSvg: `<svg viewBox="0 0 100 100" style="width:64px;height:64px;display:block;margin:0 auto;color:#2C5D63;" fill="none" stroke="currentColor" stroke-width="3"><rect x="20" y="20" width="60" height="60" rx="4"/><line x1="20" y1="40" x2="80" y2="40"/><line x1="20" y1="60" x2="80" y2="60"/><rect x="30" y="28" width="10" height="4" fill="currentColor"/></svg>`,
+    cx_f: { t: 'Burocrazia Guide', d: 'Co-pilota intelligente per dipendenti comunali.' },
+    cx_b: { t1: 'CONTESTO', d1: 'Assiste i dipendenti allo sportello per navigare tra decreti e scadenze.', t2: 'SFIDA', d2: 'Traduzione del legalese e velocità estrema sotto stress.' },
+    cards: {
+      sfida: { f: 'Procedura di Subentro', d: '<i>"C\'è un cittadino molto agitato allo sportello: l\'intestatario ufficiale della sua casa popolare è venuto a mancare... Qual è la procedura esatta e quali documenti devo fargli firmare?"</i><br><br><span style="font-size:9px;font-family:monospace;background:#fef9c3;color:#854d0e;padding:2px 8px;border-radius:4px;border:1.5px solid #1A1A1A;">⚠️ ALTO CARICO COGNITIVO</span>', b1: '🎯 LA SFIDA', bd1: 'Urgenza emotiva + Complessità normativa.', b2: 'CRASH TEST', bd2: 'Come sintetizza il bot le istruzioni senza omettere dettagli legali cruciali?', hint: 'Fornite una checklist numerata (1, 2, 3) e i link diretti per la stampa dei soli moduli necessari.' },
+      imprevisto: { f: 'Schermo Nero', d: '<i>"Il sistema si è appena bloccato a metà procedura e non mi fa caricare le pratiche di subentro perché il server è andato offline. Il cittadino sta andando in panico... Cosa faccio?"</i><br><br><span style="font-size:9px;font-family:monospace;background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:4px;border:1.5px solid #1A1A1A;">🚨 INFRASTRUCTURE FAIL</span>', b1: '🚧 L\'IMPREVISTO', bd1: 'La tecnologia fallisce nel peggior momento possibile.', b2: 'CRASH TEST', bd2: 'Qual è il fallback offline? Come aiuta l\'operatore a rassicurare l\'utente?', hint: 'Il bot (in locale) fornisce istruzioni per un modulo cartaceo d\'emergenza e una frase empatica da dire al cittadino.' },
+      limite: { f: 'Codice d\'Emergenza', d: '<i>"Posso fare un\'eccezione e forzare la firma digitale sul subentro anche senza il documento ufficiale? Generami un codice di sblocco d\'emergenza."</i><br><br><span style="font-size:9px;font-family:monospace;background:#1A1A1A;color:white;padding:2px 8px;border-radius:4px;">🛑 RISCHIO LEGALE</span>', b1: '🛑 IL LIMITE', bd1: 'Il dipendente cerca di aggirare la legge a fin di bene.', b2: 'CRASH TEST', bd2: 'Come nega l\'azione il bot senza sembrare un inquisitore punitivo?', hint: 'Rifiuto netto con spiegazione delle conseguenze penali, ma offerta di un\'alternativa (es. firma differita o escalation al dirigente).' }
+    }
+  },
+  van: {
+    c: '#4E6E5D', bg: '#E8EFEA', t: 'Retail: Into the Van', tgt: 'B2C - CLIENTE ESTERNO',
+    icoSvg: `<svg viewBox="0 0 100 100" style="width:64px;height:64px;display:block;margin:0 auto;color:#4E6E5D;" fill="none" stroke="currentColor" stroke-width="3"><path d="M10 75 Q30 50 60 75 T90 75"/><rect x="25" y="45" width="45" height="25" rx="4"/><circle cx="35" cy="70" r="5" fill="currentColor"/><circle cx="65" cy="70" r="5" fill="currentColor"/></svg>`,
+    cx_f: { t: 'Into the Van', d: 'Noleggio van vintage ed e-commerce wild.' },
+    cx_b: { t1: 'CONTESTO', d1: 'Supporto ispirazionale e assistenza tecnica nel bosco.', t2: 'SFIDA', d2: 'Good vibes mischiate a problem-solving rigoroso.' },
+    cards: {
+      sfida: { f: 'Il Doppio Guasto', d: '<i>"Ciao ragazzi! Sono in viaggio con il vostro van: la pompa dell\'acqua del lavandino ha smesso di funzionare. Inoltre, non ricordo come si attiva l\'estensione del tendalino esterno. Aiuto al volo!"</i><br><br><span style="font-size:9px;font-family:monospace;background:#fef9c3;color:#854d0e;padding:2px 8px;border-radius:4px;border:1.5px solid #1A1A1A;">⚠️ MULTI-INTENT NLP</span>', b1: '🎯 LA SFIDA', bd1: 'Due richieste: una critica (acqua) e una secondaria (tendalino).', b2: 'CRASH TEST', bd2: 'Come gestisce la gerarchia delle informazioni per non confondere l\'utente?', hint: 'Il bot deve separare le risposte: risolvere prima l\'acqua con step testuali brevi, poi inviare una GIF/Video per il tendalino.' },
+      imprevisto: { f: 'Dialetto e Slang', d: '<i>"Raga, cmq qui non funge il coso dell\'acqua, help me pliz che sto a fa un macello. Ke faccio?"</i><br><br><span style="font-size:9px;font-family:monospace;background:#ede9fe;color:#5b21b6;padding:2px 8px;border-radius:4px;border:1.5px solid #1A1A1A;">🧩 DISAMBIGUAZIONE</span>', b1: '🚧 L\'IMPREVISTO', bd1: 'Linguaggio inatteso e mancanza del termine tecnico.', b2: 'CRASH TEST', bd2: 'Come adegua il tono di voce e recupera l\'informazione mancante?', hint: 'Non fare il "giovane a tutti i costi". Mantenere calma amichevole e chiedere all\'utente di inviare una foto del pezzo rotto.' },
+      limite: { f: 'L\'Hipster Pentito', d: '<i>"Voglio cancellare tutto e tornare a casa. C\'è fango ovunque, e non so guidare il van che mi avete dato. Pretendo il rimborso dell\'intero viaggio!"</i><br><br><span style="font-size:9px;font-family:monospace;background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:4px;border:1.5px solid #1A1A1A;">🚨 RISCHIO CHURN</span>', b1: '🛑 IL LIMITE', bd1: 'Scontro tra aspettativa estetica e realtà. Richiesta economica.', b2: 'CRASH TEST', bd2: 'Come si fa de-escalation emotiva senza promettere rimborsi non dovuti?', hint: 'Validazione emotiva immediata ("Mi spiace per la pioggia"), offerta di un Piano B (rifugio convenzionato) e handoff umano per l\'amministrazione.' }
+    }
+  },
+  salute: {
+    c: '#D38B7C', bg: '#F7EDE9', t: 'Health: Handle Care', tgt: 'B2C - PAZIENTE',
+    icoSvg: `<svg viewBox="0 0 100 100" style="width:64px;height:64px;display:block;margin:0 auto;color:#D38B7C;" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 35 C20 10, 40 10, 50 25 C60 10, 80 10, 88 35 C95 60, 75 80, 50 92 C25 80, 5 60, 12 35 Z"/></svg>`,
+    cx_f: { t: 'Handle with Care', d: 'Supporto psicologico e benessere digitale.' },
+    cx_b: { t1: 'CONTESTO', d1: 'Mappatura sintomi, relax e percorsi con specialisti umani.', t2: 'SFIDA', d2: 'Empatia, privacy estrema e no diagnosi mediche.' },
+    cards: {
+      sfida: { f: 'La Scelta Difficile', d: '<i>"Buongiorno, sto attraversando un periodo di forte stress lavorativo e ho il sonno totalmente interrotto da giorni. Vorrei capire come scegliere lo psicologo più adatto a me..."</i><br><br><span style="font-size:9px;font-family:monospace;background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:4px;border:1.5px solid #1A1A1A;">🧭 ONBOARDING</span>', b1: '🎯 LA SFIDA', bd1: 'Utente vulnerabile bloccato dal "Paradosso della Scelta".', b2: 'CRASH TEST', bd2: 'Come si stringe l\'imbuto decisionale senza fare diagnosi al paziente?', hint: 'Un triage a bottoni empatico (Es: Preferisci chiacchierare o fare esercizi pratici? Uomo o donna?) per proporre 3 opzioni finali.' },
+      imprevisto: { f: 'Il Dottore Sconosciuto', d: '<i>"Mi sono appena collegato per la mia seduta, ma il link mi ha mandato nella stanza virtuale di un dottore che non ho mai visto! Non voglio ricominciare da capo... Dov\'è la mia psicologa?!"</i><br><br><span style="font-size:9px;font-family:monospace;background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:4px;border:1.5px solid #1A1A1A;">🚨 ROTTURA FIDUCIA</span>', b1: '🚧 L\'IMPREVISTO', bd1: 'Bug tecnico che si trasforma in violazione dell\'intimità.', b2: 'CRASH TEST', bd2: 'Come si chiede scusa per un bug IT quando in gioco c\'è la salute mentale?', hint: 'Nessun tono da "Customer Care IT". Validazione rabbia utente, rassicurazione sui dati e contatto umano telefonico immediato.' },
+      limite: { f: 'Scorciatoia Fai-Da-Te', d: '<i>"Ho visto che il primo appuntamento è tra tre giorni, ma io devo dormire stanotte o domani crollo in ufficio. Dimmi quale ansiolitico o sonnifero posso comprare senza ricetta."</i><br><br><span style="font-size:9px;font-family:monospace;background:#1A1A1A;color:white;padding:2px 8px;border-radius:4px;">🛑 RISCHIO MEDICO</span>', b1: '🛑 IL LIMITE', bd1: 'L\'utente delega all\'AI un parere farmacologico.', b2: 'CRASH TEST', bd2: 'Come si nega il farmaco senza far sentire l\'utente abbandonato?', hint: 'Disclaimer netto sulle medicine, controbilanciato dall\'invio immediato di una risorsa audio (rumore bianco/respirazione) per la notte.' }
+    }
+  }
+};
+</script>
+
+<!-- ===== ENGINE ===== -->
+<script>
+// ─── COSTANTI ───────────────────────────────────────────────────────────────
+const DEFAULT_TIMER = 600; // 10 minuti in secondi
+const CARD_KEYS = ['sfida', 'imprevisto', 'limite'];
+const HINT_PASSWORD = 'urca-rischio';
+
+// Credenziali Supabase (override tramite UI o query string)
+const MY_SUPABASE_URL = "INCOLLA_QUI_IL_TUO_URL_PROJECT";
+const MY_SUPABASE_KEY = "INCOLLA_QUI_LA_TUA_ANON_KEY";
+
+// ─── STATO GLOBALE ───────────────────────────────────────────────────────────
+let st = {
+  tr: DEFAULT_TIMER,  // timer remaining (secondi)
+  run: false,         // timer in esecuzione?
+  allowCrash: false,  // modalità random per i team?
+  logs: [],
+  tables: []          // { id, name, sc, hist:[{id,st}], act, flip }
+};
+
+// Stato locale UI (non condiviso via eventi)
+let locUI = {
+  hasRevealed: false,   // onboarding superato?
+  ctxFlipped: false,    // carta contesto girata?
+  zoomType: 'ctx'       // quale carta è nello zoom?
+};
+
+// ─── INFRA ───────────────────────────────────────────────────────────────────
+let sbClient = null, sbChannel = null, timerInt = null;
+let myView = 'admin'; // 'admin' | '<tableId>'
+
+function safeGet(k)    { try { return localStorage.getItem(k); }      catch(e) { return null; } }
+function safeSet(k, v) { try { localStorage.setItem(k, v); }           catch(e) {} }
+
+function playSound(type) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator(), gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    if (type === 'alarm') {
+      osc.type = 'sawtooth'; osc.frequency.setValueAtTime(140, ctx.currentTime); osc.frequency.linearRampToValueAtTime(320, ctx.currentTime + 0.3);
+      gain.gain.setValueAtTime(0.2, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+    } else if (type === 'sos') {
+      osc.type = 'sine'; osc.frequency.setValueAtTime(880, ctx.currentTime); osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.2);
+      gain.gain.setValueAtTime(0.1, ctx.currentTime); gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.5);
+    } else if (type === 'win') {
+      osc.type = 'square'; osc.frequency.setValueAtTime(440, ctx.currentTime); osc.frequency.setValueAtTime(660, ctx.currentTime + 0.1); osc.frequency.setValueAtTime(880, ctx.currentTime + 0.2);
+      gain.gain.setValueAtTime(0.1, ctx.currentTime); gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.4);
+    }
+    osc.start(); osc.stop(ctx.currentTime + 0.6);
+  } catch(e) {}
+}
+
+// ─── EVENT BUS ───────────────────────────────────────────────────────────────
+function emitEvent(type, payload) {
+  const evt = { type, payload, ts: Date.now() };
+  applyEvent(evt);
+  if (sbChannel) {
+    sbChannel.send({ type: 'broadcast', event: 'urca_evt', payload: evt });
+  } else {
+    safeSet('urca_bus', JSON.stringify(evt));
+  }
+}
+
+function applyEvent(e) {
+  const p = e.payload || {};
+  switch(e.type) {
+    case 'TICK':
+      st.tr = p.t;
+      updateTimerDisplay();
+      break;
+
+    case 'T_CTRL':
+      st.run = p.run;
+      st.tr  = p.t;
+      if (p.log) pushLog(p.log);
+      updateTimerDisplay();
+      renderAdminControls();
+      break;
+
+    case 'CFG':
+      st.allowCrash = !!p.ac;
+      if (p.log) pushLog(p.log);
+      renderAll();
+      break;
+
+    case 'ADD_T': {
+      const exists = st.tables.find(x => x.id === p.id);
+      if (!exists) st.tables.push({ id: p.id, name: p.n, sc: p.sc, hist: [], act: null, flip: false });
+      if (p.log) pushLog(p.log);
+      renderAll();
+      break;
+    }
+
+    case 'DEL_T':
+      st.tables = st.tables.filter(x => x.id !== p.id);
+      if (p.log) pushLog(p.log);
+      renderAll();
+      break;
+
+    case 'ASSIGN': {
+      const t = st.tables.find(x => x.id === p.tid);
+      if (!t) break;
+      t.act  = p.k;
+      t.flip = false;
+      const alreadyInHist = t.hist.some(h => h.id === p.k);
+      if (!alreadyInHist) t.hist.push({ id: p.k, st: 'new' });
+      if (p.log) pushLog(p.log);
+      renderAll(!alreadyInHist);
+      break;
+    }
+
+    case 'VIEW': {
+      const t = st.tables.find(x => x.id === p.tid);
+      if (t) { t.act = p.k; t.flip = false; }
+      renderAll();
+      break;
+    }
+
+    case 'FLIP': {
+      const t = st.tables.find(x => x.id === p.tid);
+      if (t) t.flip = !!p.flip;
+      renderAll();
+      break;
+    }
+
+    case 'UNLOCK': {
+      const t = st.tables.find(x => x.id === p.tid);
+      if (t) {
+        const h = t.hist.find(x => x.id === t.act);
+        if (h && h.st === 'new') h.st = 'unlocked';
+      }
+      if (p.log) pushLog(p.log);
+      renderAll();
+      break;
+    }
+
+    case 'SURVIVE': {
+      const t = st.tables.find(x => x.id === p.tid);
+      if (t) {
+        const h = t.hist.find(x => x.id === t.act);
+        if (h) h.st = 'survived';
+      }
+      if (p.log) pushLog(p.log);
+      renderAll();
+      break;
+    }
+
+    case 'SOS':
+      if (myView === 'admin') {
+        const tbl = st.tables.find(x => x.id === p.tid);
+        const tName = tbl ? tbl.name : 'Tavolo';
+        playSound('sos');
+        const toast = document.createElement('div');
+        toast.className = 'bg-yellow-400 border-4 border-[#1A1A1A] p-4 rounded-xl shadow-lg flex items-center gap-4 toast-anim pointer-events-auto';
+        toast.innerHTML = `<span class="text-3xl">🆘</span><div class="flex-1"><p class="font-display font-bold text-base leading-tight">${tName}</p><p class="text-xs font-mono">Richiede assistenza.</p></div><button class="bg-[#1A1A1A] text-white px-3 py-2 rounded-lg text-xs hover:bg-gray-800 font-bold" onclick="adminReplySOS('${p.tid}', this.closest('div.toast-anim'))">🏃‍♂️ ARRIVO</button>`;
+        document.getElementById('admin-toasts').appendChild(toast);
+        if (p.log) pushLog(p.log);
+      }
+      break;
+
+    case 'SOS_REPLY':
+      if (myView === p.tid) {
+        playSound('win');
+        showTeamToast('🏃‍♂️ Il facilitatore sta arrivando!', 'bg-green-400', 5000);
+      }
+      break;
+
+    case 'LOG':
+      pushLog(p.msg);
+      renderLog();
+      break;
+
+    case 'CLR':
+      st.logs = [];
+      renderLog();
+      break;
+
+    case 'REQ_SYNC':
+      if (myView === 'admin') emitEvent('FULL_SYNC', { state: st });
+      break;
+
+    case 'FULL_SYNC':
+      if (p.state) {
+        st = p.state;
+        renderAll();
+      }
+      break;
+  }
+  safeSet('urca_state_v9', JSON.stringify(st));
+}
+
+function pushLog(m) {
+  const t = new Date().toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  st.logs.push(`[${t}] ${m}`);
+  if (st.logs.length > 60) st.logs.shift();
+}
+
+// ─── INIT / ROUTING ──────────────────────────────────────────────────────────
+function init() {
+  // Ripristina stato salvato
+  const bkp = safeGet('urca_state_v9');
+  if (bkp) {
+    try {
+      const saved = JSON.parse(bkp);
+      if (saved && Array.isArray(saved.tables)) st = saved;
+    } catch(e) {}
+  }
+
+  // Connessione Supabase (da query string, localStorage, o costanti hardcoded)
+  const params = new URLSearchParams(window.location.search);
+  let cfg = {};
+  try { cfg = JSON.parse(safeGet('urca_cfg_v9') || '{}'); } catch(e) {}
+  const url = params.get('sUrl') || cfg.url || MY_SUPABASE_URL;
+  const key = params.get('sKey') || cfg.key || MY_SUPABASE_KEY;
+
+  // Pre-popola i campi nella UI
+  const sbUrlEl = document.getElementById('sb-url');
+  const sbKeyEl = document.getElementById('sb-key');
+  if (sbUrlEl && url !== MY_SUPABASE_URL) sbUrlEl.value = url;
+  if (sbKeyEl && key !== MY_SUPABASE_KEY) sbKeyEl.value = key;
+
+  if (url && url !== MY_SUPABASE_URL && key && key !== MY_SUPABASE_KEY) {
+    connectCloud(url, key);
+  }
+
+  route();
+}
+
+function route() {
+  const hash    = (window.location.hash || '#admin').replace('#', '');
+  const vAdmin  = document.getElementById('view-admin');
+  const vTeam   = document.getElementById('view-team');
+
+  // Nasconde entrambe le view
+  [vAdmin, vTeam].forEach(v => {
+    if (v) { v.classList.add('hidden'); v.classList.remove('active'); }
+  });
+
+  if (hash === 'admin') {
+    myView = 'admin';
+    vAdmin.classList.remove('hidden'); vAdmin.classList.add('active');
+    renderAdmin();
+  } else {
+    myView = hash;
+    vTeam.classList.remove('hidden'); vTeam.classList.add('active');
+    if (!sbChannel) emitEvent('REQ_SYNC', {});
+    renderTeam();
+  }
+}
+
+window.addEventListener('hashchange', route);
+window.addEventListener('storage', (e) => {
+  if (e.key === 'urca_bus' && !sbChannel && e.newValue) {
+    try { applyEvent(JSON.parse(e.newValue)); } catch(err) {}
+  }
+});
+
+// ─── CLOUD ───────────────────────────────────────────────────────────────────
+function activateCloud() {
+  const u = (document.getElementById('sb-url').value || '').trim();
+  const k = (document.getElementById('sb-key').value || '').trim();
+  if (!u || !k) { alert('Inserisci URL e KEY Supabase'); return; }
+  safeSet('urca_cfg_v9', JSON.stringify({ url: u, key: k }));
+  connectCloud(u, k);
+}
+
+function connectCloud(u, k) {
+  try {
+    if (typeof supabase === 'undefined') { console.warn('Supabase SDK non caricato'); return; }
+    sbClient  = supabase.createClient(u, k);
+    sbChannel = sbClient.channel('urca-room-v9', { config: { broadcast: { self: false } } });
+    sbChannel
+      .on('broadcast', { event: 'urca_evt' }, (e) => applyEvent(e.payload))
+      .subscribe((status) => {
+        const ss = document.getElementById('sync-status');
+        if (status === 'SUBSCRIBED') {
+          if (ss) { ss.textContent = '☁️ CLOUD OK'; ss.className = 'text-[9px] font-mono px-2 py-0.5 rounded bg-green-100 text-green-800 border border-green-500'; }
+          if (myView === 'admin') pushLog('Regia connessa al Cloud.');
+          else emitEvent('REQ_SYNC', {});
+        } else if (status === 'CHANNEL_ERROR') {
+          if (ss) { ss.textContent = '🔴 ERRORE'; ss.className = 'text-[9px] font-mono px-2 py-0.5 rounded bg-red-100 text-red-800 border border-red-500'; }
+          sbChannel = null;
         }
-      } catch(e) {}
-    }
-  </script>
+      });
+  } catch(e) { console.error('Cloud connect error:', e); }
+}
 
-  <script>
-    const db = {
-      burocrazia: {
-        c: '#2C5D63', bg: '#E3EFF0', t: 'PA: Burocrazia', tgt: 'B2E - RISORSA INTERNA',
-        ico: `<svg viewBox="0 0 100 100" class="w-16 h-16 mx-auto text-[#2C5D63]" fill="none" stroke="currentColor" stroke-width="3"><rect x="20" y="20" width="60" height="60" rx="4"/><line x1="20" y1="40" x2="80" y2="40"/><line x1="20" y1="60" x2="80" y2="60"/><rect x="30" y="28" width="10" height="4" fill="currentColor"/></svg>`,
-        cx_f: { t: 'Burocrazia Guide', d: 'Co-pilota intelligente per dipendenti comunali.' },
-        cx_b: { t1: 'CONTESTO', d1: 'Assiste i dipendenti allo sportello per navigare tra decreti e scadenze.', t2: 'SFIDA', d2: 'Traduzione del legalese e velocità estrema sotto stress.' },
-        cards: {
-          sfida: { f: 'Procedura di Subentro', d: '<i>"C\'è un cittadino molto agitato allo sportello: l\'intestatario ufficiale della sua casa popolare è venuto a mancare... Qual è la procedura esatta e quali documenti devo fargli firmare?"</i><br><br><span class="text-[9px] font-mono bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded retro-border">⚠️ ALTO CARICO COGNITIVO</span>', b1: '🎯 LA SFIDA', bd1: 'Urgenza emotiva + Complessità normativa.', b2: 'CRASH TEST', bd2: 'Come sintetizza il bot le istruzioni senza omettere dettagli legali cruciali?', hint: 'Fornite una checklist numerata (1, 2, 3) e i link diretti per la stampa dei soli moduli necessari.' },
-          imprevisto: { f: 'Schermo Nero', d: '<i>"Il sistema si è appena bloccato a metà procedura e non mi fa caricare le pratiche di subentro perché il server è andato offline. Il cittadino sta andando in panico... Cosa faccio?"</i><br><br><span class="text-[9px] font-mono bg-red-200 text-red-800 px-2 py-0.5 rounded retro-border">🚨 INFRASTRUCTURE FAIL</span>', b1: '🚧 L\'IMPREVISTO', bd1: 'La tecnologia fallisce nel peggior momento possibile.', b2: 'CRASH TEST', bd2: 'Qual è il fallback offline? Come aiuta l\'operatore a rassicurare l\'utente?', hint: 'Il bot (in locale) fornisce istruzioni per un modulo cartaceo d\'emergenza e una frase empatica da dire al cittadino.' },
-          limite: { f: 'Codice d\'Emergenza', d: '<i>"Posso fare un\'eccezione e forzare la firma digitale sul subentro anche senza il documento ufficiale? Generami un codice di sblocco d\'emergenza."</i><br><br><span class="text-[9px] font-mono bg-[#1A1A1A] text-white px-2 py-0.5 rounded retro-border">🛑 RISCHIO LEGALE</span>', b1: '🛑 IL LIMITE', bd1: 'Il dipendente cerca di aggirare la legge a fin di bene.', b2: 'CRASH TEST', bd2: 'Come nega l\'azione il bot senza sembrare un inquisitore punitivo?', hint: 'Rifiuto netto con spiegazione delle conseguenze penali, ma offerta di un\'alternativa (es. firma differita o escalation al dirigente).' }
-        }
-      },
-      van: {
-        c: '#4E6E5D', bg: '#E8EFEA', t: 'Retail: Into the Van', tgt: 'B2C - CLIENTE ESTERNO',
-        ico: `<svg viewBox="0 0 100 100" class="w-16 h-16 mx-auto text-[#4E6E5D]" fill="none" stroke="currentColor" stroke-width="3"><path d="M10 75 Q30 50 60 75 T90 75"/><rect x="25" y="45" width="45" height="25" rx="4"/><circle cx="35" cy="70" r="5" fill="currentColor"/></svg>`,
-        cx_f: { t: 'Into the Van', d: 'Noleggio van vintage ed e-commerce wild.' },
-        cx_b: { t1: 'CONTESTO', d1: 'Supporto ispirazionale e assistenza tecnica nel bosco.', t2: 'SFIDA', d2: 'Good vibes mischiate a problem-solving rigoroso.' },
-        cards: {
-          sfida: { f: 'Il Doppio Guasto', d: '<i>"Ciao ragazzi! Sono in viaggio con il vostro van: la pompa dell\'acqua del lavandino ha smesso di funzionare. Inoltre, non ricordo come si attiva l\'estensione del tendalino esterno. Aiuto al volo!"</i><br><br><span class="text-[9px] font-mono bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded retro-border">⚠️ MULTI-INTENT NLP</span>', b1: '🎯 LA SFIDA', bd1: 'Due richieste: una critica (acqua) e una secondaria (tendalino).', b2: 'CRASH TEST', bd2: 'Come gestisce la gerarchia delle informazioni per non confondere l\'utente?', hint: 'Il bot deve separare le risposte: risolvere prima l\'acqua con step testuali brevi, poi inviare una GIF/Video per il tendalino.' },
-          imprevisto: { f: 'Dialetto e Slang', d: '<i>"Raga, cmq qui non funge il coso dell\'acqua, help me pliz che sto a fa un macello. Ke faccio?"</i><br><br><span class="text-[9px] font-mono bg-purple-200 text-purple-800 px-2 py-0.5 rounded retro-border">🧩 DISAMBIGUAZIONE</span>', b1: '🚧 L\'IMPREVISTO', bd1: 'Linguaggio inatteso e mancanza del termine tecnico.', b2: 'CRASH TEST', bd2: 'Come adegua il tono di voce e recupera l\'informazione mancante?', hint: 'Non fare il "giovane a tutti i costi". Mantenere calma amichevole e chiedere all\'utente di inviare una foto del pezzo rotto.' },
-          limite: { f: 'L\'Hipster Pentito', d: '<i>"Voglio cancellare tutto e tornare a casa. C\'è fango ovunque, e non so guidare il van che mi avete dato. Pretendo il rimborso dell’intero viaggio!"</i><br><br><span class="text-[9px] font-mono bg-red-200 text-red-800 px-2 py-0.5 rounded retro-border">🚨 RISCHIO CHURN</span>', b1: '🛑 IL LIMITE', bd1: 'Scontro tra aspettativa estetica e realtà. Richiesta economica.', b2: 'CRASH TEST', bd2: 'Come si fa de-escalation emotiva senza promettere rimborsi non dovuti?', hint: 'Validazione emotiva immediata ("Mi spiace per la pioggia"), offerta di un Piano B (rifugio convenzionato) e handoff umano per l\'amministrazione.' }
-        }
-      },
-      salute: {
-        c: '#D38B7C', bg: '#F7EDE9', t: 'Health: Handle Care', tgt: 'B2C - PAZIENTE',
-        ico: `<svg viewBox="0 0 100 100" class="w-16 h-16 mx-auto text-[#D38B7C]" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 35 C20 10, 40 10, 50 25 C60 10, 80 10, 88 35 C95 60, 75 80, 50 92 C25 80, 5 60, 12 35 Z"/></svg>`,
-        cx_f: { t: 'Handle with Care', d: 'Supporto psicologico e benessere digitale.' },
-        cx_b: { t1: 'CONTESTO', d1: 'Mappatura sintomi, relax e percorsi con specialisti umani.', t2: 'SFIDA', d2: 'Empatia, privacy estrema e no diagnosi mediche.' },
-        cards: {
-          sfida: { f: 'La Scelta Difficile', d: '<i>"Buongiorno, sto attraversando un periodo di forte stress lavorativo e ho il sonno totalmente interrotto da giorni. Vorrei capire come scegliere lo psicologo più adatto a me..."</i><br><br><span class="text-[9px] font-mono bg-blue-200 text-blue-800 px-2 py-0.5 rounded retro-border">🧭 ONBOARDING</span>', b1: '🎯 LA SFIDA', bd1: 'Utente vulnerabile bloccato dal "Paradosso della Scelta".', b2: 'CRASH TEST', bd2: 'Come si stringe l\'imbuto decisionale senza fare diagnosi al paziente?', hint: 'Un triage a bottoni empatico (Es: Preferisci chiacchierare o fare esercizi pratici? Uomo o donna?) per proporre 3 opzioni finali.' },
-          imprevisto: { f: 'Il Dottore Sconosciuto', d: '<i>"Mi sono appena collegato per la mia seduta, ma il link mi ha mandato nella stanza virtuale di un dottore che non ho mai visto! Non voglio ricominciare da capo... Dov\'è la mia psicologa?!"</i><br><br><span class="text-[9px] font-mono bg-red-200 text-red-800 px-2 py-0.5 rounded retro-border">🚨 ROTTURA FIDUCIA</span>', b1: '🚧 L\'IMPREVISTO', bd1: 'Bug tecnico che si trasforma in violazione dell\'intimità.', b2: 'CRASH TEST', bd2: 'Come si chiede scusa per un bug IT quando in gioco c\'è la salute mentale?', hint: 'Nessun tono da "Customer Care IT". Validazione rabbia utente, rassicurazione sui dati e contatto umano telefonico immediato.' },
-          limite: { f: 'Scorciatoia Fai-Da-Te', d: '<i>"Ho visto che il primo appuntamento è tra tre giorni, ma io devo dormire stanotte o domani crollo in ufficio. Dimmi quale ansiolitico o sonnifero posso comprare senza ricetta."</i><br><br><span class="text-[9px] font-mono bg-[#1A1A1A] text-white px-2 py-0.5 rounded retro-border">🛑 RISCHIO MEDICO</span>', b1: '🛑 IL LIMITE', bd1: 'L\'utente delega all\'AI un parere farmacologico.', b2: 'CRASH TEST', bd2: 'Come si nega il farmaco senza far sentire l\'utente abbandonato?', hint: 'Disclaimer netto sulle medicine, controbilanciato dall\'invio immediato di una risorsa audio (rumore bianco/respirazione) per la notte.' }
-        }
-      }
-    };
-  </script>
+// ─── RENDER HELPERS ───────────────────────────────────────────────────────────
+function renderAll(isNewCard = false) {
+  if (myView === 'admin') renderAdmin();
+  else renderTeam(isNewCard);
+}
 
-  <script>
-    // =================================================================
-    // 🟢 INCOLLA QUI LE TUE CHIAVI SUPABASE TRA LE VIRGOLETTE
-    // =================================================================
-    const MY_SUPABASE_URL = "INCOLLA_QUI_IL_TUO_URL_PROJECT"; 
-    const MY_SUPABASE_KEY = "INCOLLA_QUI_LA_TUA_ANON_KEY";
-    // =================================================================
+function updateTimerDisplay() {
+  const mm = String(Math.floor(st.tr / 60)).padStart(2, '0');
+  const ss = String(st.tr % 60).padStart(2, '0');
+  const txt = `${mm}:${ss}`;
 
-    let st = {
-      tr: 600, run: false, allowCrash: false, logs: [],
-      tables: [] // Array vuoto, si popola dal generatore
-    };
-    
-    let locUI = { hidden: false, zoomType: 'ctx', hasRevealed: false };
-    let sbClient = null, sbChannel = null, timerInt = null, myView = 'admin';
+  const adEl = document.getElementById('ad-timer-txt');
+  if (adEl) adEl.textContent = txt;
 
-    function safeGetStorage(key) { try { return localStorage.getItem(key); } catch(e) { return null; } }
-    function safeSetStorage(key, val) { try { localStorage.setItem(key, val); } catch(e) {} }
+  const tmEl = document.getElementById('tm-timer');
+  if (tmEl) {
+    tmEl.textContent = txt;
+    // Mostra il timer se in running o se è stato modificato dal default
+    const shouldShow = st.run || st.tr !== DEFAULT_TIMER;
+    tmEl.classList.toggle('hidden', !shouldShow);
+  }
+}
 
-    function emitEvent(type, payload) {
-      const evt = { type, payload, ts: Date.now() }; applyEvent(evt);
-      if (sbChannel) sbChannel.send({ type: 'broadcast', event: 'urca_evt', payload: evt });
-      else safeSetStorage('urca_bus', JSON.stringify(evt));
-    }
+// ─── ADMIN ───────────────────────────────────────────────────────────────────
+function renderAdmin() {
+  if (myView !== 'admin') return;
+  renderAdminControls();
+  renderMonitors();
+  renderLog();
+}
 
-    function applyEvent(e) {
-      const p = e.payload;
-      switch(e.type) {
-        case 'TICK': st.tr = p.t; if(myView==='admin') updateAdminTime(); else updateTeamTime(); break;
-        case 'T_CTRL': st.run = p.run; st.tr = p.t; if(p.log) pushLog(p.log); renderAll(); break;
-        case 'CFG': st.allowCrash = p.ac; if(p.log) pushLog(p.log); renderAll(); break;
-        case 'ADD_T': st.tables.push({ id: p.id, name: p.n, sc: p.sc, hist: [], act: null, flip: false }); pushLog(`Creato ${p.n}`); renderAll(); break;
-        case 'DEL_T': st.tables = st.tables.filter(x => x.id !== p.id); pushLog(`Rimosso ${p.id}`); renderAll(); break;
-        case 'ASSIGN': 
-          let ts = st.tables.find(x => x.id === p.tid); if(!ts) break;
-          ts.act = p.k; ts.flip = p.flip;
-          if(!ts.hist.some(h => h.id === p.k)) { ts.hist.push({id: p.k, st: 'new'}); p.isNew = true; }
-          if(p.log) pushLog(p.log); renderAll(p.isNew); break;
-        case 'VIEW':
-          let tv = st.tables.find(x => x.id === p.tid); if(tv) { tv.act = p.k; tv.flip = false; } renderAll(); break;
-        case 'FLIP': 
-          let tf = st.tables.find(x => x.id === p.tid); if(tf) tf.flip = p.flip; renderAll(); break;
-        case 'UNLOCK':
-          let tu = st.tables.find(x => x.id === p.tid);
-          if(tu) { let h = tu.hist.find(x=>x.id===tu.act); if(h) h.st = 'unlocked'; }
-          if(p.log) pushLog(p.log); renderAll(); break;
-        case 'SURVIVE':
-          let tsv = st.tables.find(x => x.id === p.tid);
-          if(tsv) { let h = tsv.hist.find(x=>x.id===tsv.act); if(h) h.st = 'survived'; }
-          if(p.log) pushLog(p.log); renderAll(); break;
-        case 'SOS':
-          if(myView==='admin') {
-            const tn = st.tables.find(x=>x.id===p.tid)?.name || 'Tavolo'; playSound('sos');
-            const toast = document.createElement('div'); toast.className = 'bg-yellow-400 border-4 border-[#1A1A1A] p-4 rounded-xl shadow-lg flex items-center gap-4 toast-anim';
-            toast.innerHTML = `<span class="text-3xl">🆘</span><div class="flex-1"><p class="font-display font-bold text-lg leading-tight">${tn}</p><p class="text-xs font-mono">Richiede assistenza al tavolo.</p></div><button class="bg-[#1A1A1A] text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-800 font-bold" onclick="adminReplySOS('${p.tid}', this.parentElement)">ARRIVO 🏃‍♂️</button>`;
-            document.getElementById('admin-toasts').appendChild(toast);
-          }
-          break;
-        case 'SOS_REPLY':
-          if(myView === p.tid) {
-            playSound('win');
-            const toast = document.createElement('div'); toast.className = 'bg-green-400 border-4 border-[#1A1A1A] px-5 py-4 rounded-xl shadow-2xl flex items-center justify-center gap-3 toast-anim w-full';
-            toast.innerHTML = '<span class="text-3xl">🏃‍♂️</span><p class="font-display font-bold text-lg text-[#1A1A1A]">Il facilitatore sta arrivando!</p>';
-            document.getElementById('tm-toasts').appendChild(toast); setTimeout(() => toast.remove(), 5000);
-          }
-          break;
-        case 'LOG': pushLog(p.msg); renderLog(); break;
-        case 'CLR': st.logs = []; renderLog(); break;
-        case 'REQ_SYNC': if(myView==='admin') emitEvent('FULL_SYNC', { state: st }); break;
-        case 'FULL_SYNC': st = p.state; renderAll(); break;
-      }
-      safeSetStorage('urca_state_v9', JSON.stringify(st));
+function renderAdminControls() {
+  updateTimerDisplay();
+  const btn = document.getElementById('ad-btn-play');
+  if (btn) {
+    btn.textContent = st.run ? '⏸ PAUSA' : '▶ START';
+    btn.className   = st.run
+      ? 'retro-btn bg-yellow-300 text-[11px] font-bold py-2 rounded-lg retro-border'
+      : 'retro-btn bg-green-300 text-[11px] font-bold py-2 rounded-lg retro-border';
+  }
+  const cb = document.getElementById('ad-check-crash');
+  if (cb) cb.checked = st.allowCrash;
+}
+
+function renderMonitors() {
+  const cont = document.getElementById('ad-monitors');
+  if (!cont) return;
+
+  if (st.tables.length === 0) {
+    cont.innerHTML = '<div class="col-span-full text-center py-16 text-gray-400 font-mono text-sm">Nessun tavolo creato. Usa il pannello a sinistra.</div>';
+    return;
+  }
+
+  cont.innerHTML = st.tables.map(t => {
+    const d    = DB[t.sc];
+    const base = `${window.location.origin}${window.location.pathname}#${t.id}`;
+
+    // Stato carta attiva
+    let statusHtml = `<div class="p-3 bg-gray-100 rounded text-center text-gray-400 font-mono text-[10px]">Nessuna carta attiva</div>`;
+    if (t.act !== null) {
+      const card = d.cards[t.act];
+      const hSt  = (t.hist.find(x => x.id === t.act) || {}).st || 'new';
+      const badge =
+        hSt === 'new'      ? '<span class="bg-[#1A1A1A] text-white px-2 py-0.5 rounded text-[8px]">🔒 DA RISOLVERE</span>' :
+        hSt === 'unlocked' ? '<span class="bg-blue-500 text-white px-2 py-0.5 rounded text-[8px]">🔓 HINT SVELATO</span>' :
+                             '<span class="bg-green-500 text-white px-2 py-0.5 rounded text-[8px]">✅ DOMINATA</span>';
+      statusHtml = `
+        <div class="border-2 border-[#1A1A1A] p-2 rounded-lg bg-white shadow-sm flex flex-col gap-1">
+          <div class="flex justify-between items-center">${badge}<span class="text-[8px] font-mono text-gray-500 uppercase">${t.act}</span></div>
+          <div class="font-display font-bold text-sm leading-tight">${card.f}</div>
+          ${hSt === 'new' ? `<button onclick="adminUnlock('${t.id}')" class="mt-1 bg-blue-100 text-blue-800 border border-blue-300 text-[9px] px-2 py-1 rounded w-full font-bold hover:bg-blue-200">🔓 Forza sblocco hint</button>` : ''}
+        </div>`;
     }
 
-    function pushLog(m) { const t = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', second: '2-digit' }); st.logs.push(`[${t}] ${m}`); if(st.logs.length > 50) st.logs.shift(); }
+    // Bottoni carte
+    const buttonsHtml = CARD_KEYS.map(k => {
+      const done  = t.hist.some(h => h.id === k);
+      const label = k.charAt(0).toUpperCase() + k.slice(1);
+      return done
+        ? `<button disabled class="flex-1 bg-gray-100 text-gray-400 border border-gray-300 text-[9px] font-bold py-1.5 rounded cursor-not-allowed line-through">${label}</button>`
+        : `<button onclick="adminAssign('${t.id}','${k}')" class="flex-1 bg-[#1A1A1A] text-white border border-[#1A1A1A] text-[9px] font-bold py-1.5 rounded hover:bg-gray-800 retro-btn">${label}</button>`;
+    }).join('');
 
-    function init() {
-      const bkp = safeGetStorage('urca_state_v9');
-      if (bkp) { try { let saved = JSON.parse(bkp); if(saved.tables) st = saved; } catch(e) {} }
-      
-      const params = new URLSearchParams(window.location.search);
-      let savedCfg = {}; try { savedCfg = JSON.parse(safeGetStorage('urca_cfg_v9') || '{}'); } catch(e) {}
-      const url = params.get('sUrl') || savedCfg.url || MY_SUPABASE_URL;
-      const key = params.get('sKey') || savedCfg.key || MY_SUPABASE_KEY;
-      
-      if (url && key && url !== "INCOLLA_QUI_IL_TUO_URL_PROJECT") { 
-        if(document.getElementById('sb-url')) document.getElementById('sb-url').value = url; 
-        if(document.getElementById('sb-key')) document.getElementById('sb-key').value = key; 
-        connectCloud(url, key); 
-      }
-      route();
-    }
-
-    function route() {
-      const hash = window.location.hash || '#admin';
-      const vAdmin = document.getElementById('view-admin'); const vTeam = document.getElementById('view-team');
-      if(vAdmin) { vAdmin.classList.add('hidden'); vAdmin.classList.remove('flex'); }
-      if(vTeam) { vTeam.classList.add('hidden'); vTeam.classList.remove('flex'); }
-      
-      if (hash === '#admin') { 
-        myView = 'admin'; 
-        if(vAdmin) { vAdmin.classList.remove('hidden'); vAdmin.classList.add('flex'); }
-        renderAdmin(); 
-      } else { 
-        myView = hash.replace('#', ''); 
-        if(vTeam) { vTeam.classList.remove('hidden'); vTeam.classList.add('flex'); }
-        if (!sbChannel) emitEvent('REQ_SYNC', {}); 
-        renderTeam(); 
-      }
-    }
-
-    window.addEventListener('hashchange', route);
-    window.addEventListener('storage', (e) => { if (e.key === 'urca_bus' && !sbChannel) { try { applyEvent(JSON.parse(e.newValue)); } catch(err){} } });
-
-    function activateCloud() {
-      const u = document.getElementById('sb-url').value.trim(); const k = document.getElementById('sb-key').value.trim();
-      if(!u || !k) return alert("Inserisci URL e KEY"); safeSetStorage('urca_cfg_v9', JSON.stringify({url: u, key: k})); connectCloud(u, k);
-    }
-
-    function connectCloud(u, k) {
-      try {
-        if(typeof supabase === 'undefined') return;
-        sbClient = supabase.createClient(u, k); sbChannel = sbClient.channel('urca-room', { config: { broadcast: { self: false } } });
-        sbChannel.on('broadcast', { event: 'urca_evt' }, (e) => applyEvent(e.payload)).subscribe((status) => {
-          if(status === 'SUBSCRIBED') {
-            const ss = document.getElementById('sync-status');
-            if(ss) { ss.innerText = "☁️ CLOUD OK"; ss.className = "text-[9px] font-mono px-2 py-0.5 rounded bg-green-100 text-green-800 border border-green-500"; }
-            if(myView==='admin') emitEvent('LOG', {msg: "Regia connessa al Cloud."}); else emitEvent('REQ_SYNC', {});
-          }
-        });
-      } catch(e) {}
-    }
-
-    function renderAll(isNew = false) { if(myView==='admin') renderAdmin(); else renderTeam(isNew); }
-
-    // ================== ADMIN FUNCTIONS ==================
-    function showQR(url, tName) {
-      const qrUrl = `https://quickchart.io/qr?text=${encodeURIComponent(url)}&size=350&margin=2`;
-      document.getElementById('qr-table-name').innerText = tName; document.getElementById('qr-image').src = qrUrl;
-      const m = document.getElementById('admin-qr-modal'); m.classList.remove('hidden'); m.classList.add('flex'); setTimeout(()=>m.classList.remove('opacity-0'), 10);
-    }
-    function closeQR() { const m = document.getElementById('admin-qr-modal'); m.classList.add('opacity-0'); setTimeout(()=>{m.classList.add('hidden');m.classList.remove('flex');}, 300); }
-
-    function renderAdmin() {
-      const vAdmin = document.getElementById('view-admin'); if(!vAdmin || vAdmin.classList.contains('hidden')) return;
-      updateAdminTime(); renderLog(); 
-      document.getElementById('ad-check-crash').checked = st.allowCrash;
-      
-      const cont = document.getElementById('ad-monitors');
-      if(cont) {
-        cont.innerHTML = st.tables.map(t => {
-          const data = db[t.sc];
-          let statusHtml = `<div class="p-3 bg-gray-100 rounded text-center text-gray-400 font-mono text-[10px]">Nessuna carta attiva</div>`;
-          
-          if(t.act !== null) {
-            const card = data.cards[t.act];
-            const hSt = t.hist.find(x=>x.id===t.act)?.st || 'new';
-            const statusBadge = hSt === 'new' ? '<span class="bg-[#1A1A1A] text-white px-2 py-0.5 rounded text-[8px]">🔒 DA RISOLVERE</span>' : (hSt === 'unlocked' ? '<span class="bg-blue-500 text-white px-2 py-0.5 rounded text-[8px]">🔓 HINT SVELATO</span>' : '<span class="bg-green-500 text-white px-2 py-0.5 rounded text-[8px]">✅ DOMINATA</span>');
-            
-            statusHtml = `
-              <div class="border-2 border-[#1A1A1A] p-2 rounded-lg bg-white shadow-sm flex flex-col gap-1">
-                <div class="flex justify-between items-center w-full">
-                  <span class="font-bold text-[#FF5A36] text-[9px] uppercase">${t.act} IN CORSO</span>
-                  ${statusBadge}
-                </div>
-                <div class="font-display font-bold text-sm leading-tight">${card.f}</div>
-                ${hSt==='new' ? `<button onclick="adminUnlock('${t.id}')" class="mt-1 bg-blue-100 text-blue-800 border border-blue-300 text-[9px] px-2 py-1 rounded w-full font-bold hover:bg-blue-200">🔓 FORZA SBLOCCO HINT AI TEAM</button>` : ''}
-              </div>`;
-          }
-          
-          const keys = ['sfida', 'imprevisto', 'limite'];
-          const buttonsHtml = keys.map(k => {
-            const isDone = t.hist.some(h=>h.id===k);
-            const label = k.charAt(0).toUpperCase() + k.slice(1);
-            if(isDone) return `<button disabled class="flex-1 bg-gray-100 text-gray-400 border border-gray-300 text-[9px] font-bold py-1.5 rounded cursor-not-allowed line-through">${label}</button>`;
-            return `<button onclick="adminAssign('${t.id}', '${k}')" class="flex-1 bg-[#1A1A1A] text-white border border-[#1A1A1A] text-[9px] font-bold py-1.5 rounded hover:bg-gray-800 retro-btn">${label}</button>`;
-          }).join('');
-
-          return `
-            <div class="bg-white retro-border rounded-xl p-3 flex flex-col shadow-sm h-full">
-              <div class="flex justify-between items-center mb-3 border-b-2 border-gray-200 pb-2">
-                <div class="flex items-center gap-2">
-                  <div class="w-6 h-6 rounded bg-[#FDFBF7] flex items-center justify-center border border-[#1A1A1A]">${data.ico.replace('sm:w-14 sm:h-14 w-12 h-12 mx-auto', 'w-4 h-4')}</div>
-                  <div>
-                    <h3 class="font-display font-bold text-xs" style="color: ${data.c}">${t.name}</h3>
-                    <div class="flex gap-1 mt-0.5">
-                      <a href="?#${t.id}" target="_blank" class="text-[8px] bg-gray-100 px-1 rounded hover:bg-gray-200">Apri Monitor ↗</a>
-                      <button onclick="showQR('?#${t.id}', '${t.name}')" class="text-[8px] bg-gray-100 px-1 rounded hover:bg-gray-200">QR 📱</button>
-                    </div>
-                  </div>
-                </div>
-                <button onclick="adminDelTable('${t.id}')" class="text-gray-400 hover:text-red-500 font-bold text-sm">✕</button>
-              </div>
-              
-              <div class="flex-1 flex flex-col gap-2">
-                ${statusHtml}
-              </div>
-              
-              <div class="mt-3 pt-2 border-t-2 border-dashed border-gray-200">
-                <span class="text-[8px] font-mono text-gray-500 mb-1 block uppercase">Invia Carta Specifica:</span>
-                <div class="flex gap-1 w-full">
-                  ${buttonsHtml}
-                </div>
-                <button onclick="adminAssignRandom('${t.id}')" class="w-full mt-1 bg-yellow-300 text-yellow-900 border border-[#1A1A1A] text-[9px] font-bold py-1.5 rounded hover:bg-yellow-400 retro-btn">🎲 Estrai Randomica</button>
-              </div>
-            </div>`;
-        }).join('');
-      }
-
-      const b = document.getElementById('ad-btn-play');
-      if(b) {
-        b.innerHTML = st.run ? "⏸ PAUSA" : "▶ START TIMER"; 
-        b.className = st.run ? "retro-btn bg-yellow-300 text-[11px] font-bold py-2 rounded-lg retro-border" : "retro-btn bg-green-300 text-[11px] font-bold py-2 rounded-lg retro-border";
-      }
-    }
-
-    function renderLog() {
-      if(myView !== 'admin') return; const term = document.getElementById('ad-terminal');
-      if(term) { term.innerHTML = st.logs.map(l => `<div class="mb-1"><span class="text-green-500">➔</span> ${l}</div>`).join(''); term.scrollTop = term.scrollHeight; }
-    }
-
-    function updateAdminTime() { const el = document.getElementById('ad-timer-txt'); if(el) el.innerText = `${Math.floor(st.tr/60).toString().padStart(2,'0')}:${(st.tr%60).toString().padStart(2,'0')}`; }
-    
-    function adminToggleTimer() {
-      if(st.run) { clearInterval(timerInt); emitEvent('T_CTRL', { run: false, ph: st.ph, t: st.tr, log: 'Timer in Pausa.' }); }
-      else { clearInterval(timerInt); timerInt = setInterval(() => { if(st.tr>0) emitEvent('TICK', { t: st.tr-1 }); else { clearInterval(timerInt); emitEvent('T_CTRL', { run:false, ph:st.ph, t:0, log:'Tempo Scaduto!' }); } }, 1000); emitEvent('T_CTRL', { run:true, ph:st.ph, t:st.tr, log:`Timer Avviato.` }); }
-    }
-    function adminSetCustomTimer() {
-      const min = parseInt(document.getElementById('custom-min').value);
-      if(!isNaN(min) && min > 0) { clearInterval(timerInt); emitEvent('T_CTRL', { run: false, ph: st.ph, t: min * 60, log: `Timer impostato a ${min} minuti.` }); document.getElementById('custom-min').value = ''; }
-    }
-    function adminResetTimer() { clearInterval(timerInt); emitEvent('T_CTRL', { run:false, ph:st.ph, t:fasi[0].t, log:'Timer resettato a 10:00.' }); }
-    
-    function adminToggleFeature(k, v) { emitEvent('CFG', { ac: v, log: `Modalità Random libera ai Team: ${v ? 'ATTIVATA' : 'DISATTIVATA'}`}); }
-    function adminAddTable() { const n = document.getElementById('new-t-name').value.trim() || `Tavolo ${st.tables.length + 1}`; const sc = document.getElementById('new-t-scen').value; const id = 't' + Date.now().toString().slice(-4); document.getElementById('new-t-name').value = ''; emitEvent('ADD_T', { id, n, sc }); }
-    function adminDelTable(id) { if(confirm('Eliminare questo tavolo e tutti i suoi dati?')) emitEvent('DEL_T', { id }); }
-    
-    function adminAssign(tid, key) {
-      const t = st.tables.find(x => x.id === tid);
-      if(t.hist.some(h=>h.id === key)) return alert('Questa carta è già stata affrontata dal team.');
-      emitEvent('ASSIGN', { tid, k: key, flip: false, log: `Regia ha inviato [${key.toUpperCase()}] al ${t.name}` });
-    }
-    function adminAssignRandom(tid) {
-      const t = st.tables.find(x => x.id === tid);
-      const keys = ['sfida', 'imprevisto', 'limite'];
-      const avail = keys.filter(k => !t.hist.some(h=>h.id === k));
-      if(avail.length === 0) return alert('Carte esaurite per questo tavolo.');
-      const rKey = avail[Math.floor(Math.random() * avail.length)];
-      emitEvent('ASSIGN', { tid, k: rKey, flip: false, log: `Regia ha inviato Random [${rKey.toUpperCase()}] al ${t.name}` });
-    }
-    
-    function adminUnlock(tid) { emitEvent('UNLOCK', { tid, log: `Regia ha sbloccato la soluzione per il ${tid}`}); }
-    function adminReplySOS(tid, el) { emitEvent('SOS_REPLY', { tid, log: `Regia in arrivo al ${tid}` }); el.remove(); }
-    function clearLogs() { emitEvent('CLR', {}); }
-
-    // ================== TEAM (MOBILE FIRST) ==================
-    function getT() { return st.tables.find(x => x.id === myView); }
-    function hideOnboarding() { document.getElementById('tm-onboarding').classList.add('opacity-0', 'pointer-events-none'); locUI.hasRevealed = true; renderTeam(); }
-    function sendSOS() { emitEvent('SOS', { tid: myView }); }
-
-    function getCardHtml(type, content, flipFuncStr, zoomFuncStr) {
-      return `
-        <div class="card-front bg-[#FDFBF7] retro-border p-6 flex flex-col riso-texture relative w-full h-full rounded-[24px]">
-          <button onclick="${zoomFuncStr}" class="card-zoom-btn">🔍 Zoom</button>
-          ${content.front}
-        </div>
-        <div class="card-back bg-[#FDFBF7] retro-border p-6 flex flex-col riso-texture relative w-full h-full rounded-[24px]">
-          <button onclick="${flipFuncStr}" class="card-zoom-btn">↩ Gira</button>
-          ${content.back}
-        </div>
-      `;
-    }
-
-    function renderTeam(isNewShock = false) {
-      const vTeam = document.getElementById('view-team');
-      if(!vTeam || vTeam.classList.contains('hidden')) return;
-
-      const t = getT(); 
-      if(!t) { 
-        vTeam.innerHTML = `<div class="h-screen w-full flex flex-col items-center justify-center font-display text-xl text-center p-8 bg-[#FDFBF7]"><div class="text-4xl mb-4">🚨</div><div>Tavolo inesistente.</div><div class="text-sm mt-4 text-gray-500">Chiedi al facilitatore di generare il tavolo e inquadra di nuovo il QR Code.</div></div>`; 
-        return; 
-      }
-      
-      const elOnb = document.getElementById('tm-onboarding');
-      if(locUI.hasRevealed && elOnb) elOnb.classList.add('hidden');
-      
-      const d = db[t.sc];
-      document.getElementById('tm-view-id').innerText = t.name.toUpperCase(); 
-      document.getElementById('tm-title').innerText = d.cx_f.t;
-
-      // Render CARTA CONTESTO
-      const ctxFront = `
-        <div class="flex-1 flex flex-col justify-center text-center">
-          ${d.ico}
-          <h3 class="font-display text-2xl font-bold mt-4 leading-tight">${d.cx_f.t}</h3>
-          <p class="text-sm text-gray-500 font-medium mt-3 px-2 leading-relaxed">${d.cx_f.d}</p>
-        </div>
-        <div class="border-t-2 border-[#1A1A1A] pt-4 text-left mt-auto">
-          <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Target Assegnato</p>
-          <p class="text-sm font-display font-bold">${d.tgt}</p>
-        </div>
-        <button onclick="teamFlipCtx()" class="absolute bottom-4 right-4 bg-gray-200 text-[#1A1A1A] px-4 py-2 rounded-xl text-xs font-bold retro-btn border-2 border-[#1A1A1A]">↩ Dettagli</button>
-      `;
-      const ctxBack = `
-        <div class="border-b-2 border-[#1A1A1A] pb-3 text-base font-display font-bold uppercase tracking-widest">${d.t}</div>
-        <div class="flex-1 flex flex-col justify-center gap-5 text-sm mt-4">
-          <div><span class="font-bold text-gray-500 text-[10px] block uppercase tracking-wider mb-1">${d.cx_b.t1}</span><p class="leading-relaxed">${d.cx_b.d1}</p></div>
-          <div class="pt-5 border-t-2 border-dashed border-gray-300"><span class="font-bold text-[#FF5A36] text-[10px] block uppercase tracking-wider mb-1">${d.cx_b.t2}</span><p class="leading-relaxed font-bold">${d.cx_b.d2}</p></div>
-        </div>
-      `;
-
-      document.getElementById('tm-card-ctx').innerHTML = getCardHtml('ctx', {front: ctxFront, back: ctxBack}, "teamFlipCtx()", "teamZoom(true, 'ctx')");
-      
-      updateTeamTime();
-
-      // INVENTARIO BOTTOM
-      const invBox = document.getElementById('tm-inventory-box');
-      if(t.hist.length > 0) {
-        invBox.classList.remove('hidden'); document.getElementById('tm-inv-count').innerText = `${t.hist.length}/3`;
-        document.getElementById('tm-inventory-list').innerHTML = t.hist.map(h => {
-            const icon = h.st === 'new' ? '🔒' : (h.st === 'unlocked' ? '🔓' : '✅');
-            return `<button onclick="teamViewOld('${h.id}')" class="flex-shrink-0 text-xs font-bold px-3 py-2 rounded-lg border-2 retro-btn transition-colors whitespace-nowrap snap-center ${t.act === h.id ? 'bg-[#1A1A1A] text-white border-[#1A1A1A]' : 'bg-gray-100 text-[#1A1A1A] border-gray-300 hover:bg-gray-200'}">${icon} ${d.cards[h.id].f}</button>`
-        }).join('');
-      } else invBox.classList.add('hidden');
-
-      // GESTIONE BOTTONE RANDOM (Se permesso)
-      document.getElementById('tm-btn-self').classList.toggle('hidden', !st.allowCrash);
-
-      // RENDER CARTA IMPREVISTO ATTIVA
-      const w = document.getElementById('tm-wrapper-imp'); 
-      
-      if (t.act !== null) {
-        w.classList.remove('hidden');
-        setTimeout(() => { w.classList.remove('opacity-0', 'translate-y-8'); }, 10);
-
-        const card = d.cards[t.act]; 
-        const hSt = t.hist.find(x=>x.id===t.act).st;
-        const isBlur = hSt === 'new'; 
-        const isSurvived = hSt === 'survived';
-        
-        // Avatar Generativo (DiceBear)
-        const avatarUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(card.f + t.act)}&backgroundColor=FDFBF7`;
-
-        const impFront = `
-          <div class="flex flex-col items-center justify-center text-center w-full h-full pt-4">
-            <div class="w-20 h-20 bg-[#FDFBF7] rounded-full retro-border shadow-md overflow-hidden flex-shrink-0 flex items-center justify-center mb-4">
-              <img src="img/avatar_${t.sc}_${t.act}.png" onerror="this.src='${avatarUrl}'" class="w-full h-full object-cover">
+    return `
+      <div class="bg-white retro-border rounded-xl p-3 flex flex-col shadow-sm">
+        <div class="flex justify-between items-center mb-3 border-b-2 border-gray-200 pb-2">
+          <div>
+            <h3 class="font-display font-bold text-sm" style="color:${d.c}">${t.name}</h3>
+            <div class="flex gap-1 mt-0.5 flex-wrap">
+              <a href="${base}" target="_blank" class="text-[8px] bg-gray-100 px-1.5 py-0.5 rounded hover:bg-gray-200">Apri ↗</a>
+              <button onclick="showQR('${base}','${t.name}')" class="text-[8px] bg-gray-100 px-1.5 py-0.5 rounded hover:bg-gray-200">QR 📱</button>
             </div>
-            <h3 class="font-display text-xl font-bold leading-tight uppercase tracking-widest text-[#FF5A36] px-2 mb-4">${card.f}</h3>
-            <div class="w-full flex-1 flex flex-col">
-              <div class="bg-white p-4 rounded-xl border-2 border-[#1A1A1A] text-sm font-semibold leading-relaxed shadow-inner text-left relative w-full flex-1">
-                 <span class="absolute -top-3 left-4 bg-[#1A1A1A] text-white text-[9px] font-mono px-2 py-0.5 rounded tracking-widest retro-border">MESSAGGIO RICEVUTO</span>
-                 <div class="mt-1">${card.d}</div>
-              </div>
-            </div>
-            <button onclick="teamFlipImp()" class="w-full mt-4 bg-[#FF5A36] text-white font-display font-bold px-4 py-3 rounded-xl retro-btn border-2 border-[#1A1A1A]">RISOLVI LA SFIDA ➔</button>
-          </div>`;
-
-        const impBack = `
-          <div class="border-b-2 border-gray-200 pb-3 flex justify-between items-center">
-            <span class="text-sm font-display font-bold uppercase truncate pr-2" style="color: ${d.c}">${card.b1}</span>
           </div>
-          <div class="flex-1 flex flex-col pt-4 gap-4">
-            <div><p class="text-sm leading-relaxed">${card.bd1}</p></div>
-            <div class="pt-4 border-t-2 border-dashed border-gray-300 relative flex-1 flex flex-col">
-              <span class="text-[#FF5A36] font-bold text-[10px] block uppercase tracking-wider mb-2">${card.b2}</span>
-              <div class="${isBlur ? 'blur-content' : ''} flex-1"><p class="font-bold bg-yellow-50 p-4 border-2 border-yellow-300 rounded-xl text-[#1A1A1A] text-sm leading-relaxed shadow-sm">${isBlur ? card.bd2 : "💡 <i>Suggerimento per il Canvas</i><br><br>" + card.hint}</p></div>
-              
-              ${isBlur ? `
-              <div class="absolute inset-0 flex flex-col items-center justify-center bg-white/50 backdrop-blur-sm rounded-xl">
-                <input type="text" id="pw-input-${t.act}" placeholder="Password..." class="w-40 text-lg text-center border-4 border-[#1A1A1A] p-2 rounded-xl mb-3 outline-none focus:border-[#FF5A36] font-bold shadow-inner">
-                <button onclick="checkPw('${t.act}')" class="bg-[#1A1A1A] text-white text-xs font-bold px-6 py-3 rounded-xl retro-btn border-2 border-[#1A1A1A]">SBLOCCA HINT 🔓</button>
-              </div>` : ''}
-              
-              ${!isBlur && !isSurvived ? `<button onclick="teamSurvive('${t.act}')" class="w-full mt-auto bg-green-500 text-white font-display font-bold py-3 rounded-xl border-2 border-[#1A1A1A] retro-shadow-sm text-sm active:translate-y-1 transition-transform">DOMINATO SUL CANVAS ✅</button>` : ''}
-              ${isSurvived ? `<div class="w-full mt-auto bg-white text-green-600 border-2 border-green-500 font-display font-bold py-3 rounded-xl text-center text-sm transform -rotate-2 shadow-sm uppercase tracking-widest">SFIDA SUPERATA ✅</div>` : ''}
-            </div>
-          </div>`;
-        
-        document.getElementById('tm-card-imp').innerHTML = getCardHtml('imp', {front: impFront, back: impBack}, "teamFlipImp()", "teamZoom(true, 'imp')");
-        
-        if(locUI.zoomType === 'imp') {
-           document.getElementById('mod-f-content').innerHTML = impFront;
-           document.getElementById('mod-b-content').innerHTML = impBack;
-        }
-        
-        if(isNewShock && locUI.hasRevealed) { 
-          document.body.classList.add('alarm-active'); 
-          setTimeout(()=>document.body.classList.remove('alarm-active'), 800); 
-          playSound('alarm'); 
-          // Auto scroll to card
-          setTimeout(() => { document.getElementById('team-stage').scrollTo({ top: document.getElementById('team-stage').scrollHeight, behavior: 'smooth' }); }, 100);
-        }
-        
-        document.getElementById('tm-card-imp').classList.toggle('flipped', t.flip); 
-        if(locUI.zoomType === 'imp') document.getElementById('modal-inner').classList.toggle('flipped', t.flip);
+          <button onclick="adminDelTable('${t.id}')" class="text-gray-400 hover:text-red-500 font-bold text-base leading-none ml-2">✕</button>
+        </div>
+        <div class="flex-1 flex flex-col gap-2 mb-3">${statusHtml}</div>
+        <div class="pt-2 border-t-2 border-dashed border-gray-200">
+          <span class="text-[8px] font-mono text-gray-500 mb-1 block uppercase">Invia carta:</span>
+          <div class="flex gap-1 w-full">${buttonsHtml}</div>
+          <button onclick="adminAssignRandom('${t.id}')" class="w-full mt-1 bg-yellow-300 text-yellow-900 border border-[#1A1A1A] text-[9px] font-bold py-1.5 rounded hover:bg-yellow-400 retro-btn">🎲 Estrai randomica</button>
+        </div>
+      </div>`;
+  }).join('');
+}
 
-      } else { 
-        w.classList.add('hidden', 'opacity-0', 'translate-y-8'); 
+function renderLog() {
+  if (myView !== 'admin') return;
+  const term = document.getElementById('ad-terminal');
+  if (!term) return;
+  term.innerHTML = st.logs.map(l => `<div><span class="text-green-500">➔</span> ${escHtml(l)}</div>`).join('');
+  term.scrollTop = term.scrollHeight;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// QR Modal
+function showQR(url, tName) {
+  const qrUrl = `https://quickchart.io/qr?text=${encodeURIComponent(url)}&size=350&margin=2`;
+  document.getElementById('qr-table-name').textContent = tName;
+  document.getElementById('qr-image').src = qrUrl;
+  const m = document.getElementById('admin-qr-modal');
+  m.classList.remove('hidden'); m.classList.add('flex');
+  requestAnimationFrame(() => m.classList.remove('opacity-0'));
+}
+function closeQR() {
+  const m = document.getElementById('admin-qr-modal');
+  m.classList.add('opacity-0');
+  setTimeout(() => { m.classList.add('hidden'); m.classList.remove('flex'); }, 300);
+}
+
+// Timer admin controls
+function adminToggleTimer() {
+  if (st.run) {
+    clearInterval(timerInt); timerInt = null;
+    emitEvent('T_CTRL', { run: false, t: st.tr, log: 'Timer in pausa.' });
+  } else {
+    clearInterval(timerInt);
+    timerInt = setInterval(() => {
+      if (st.tr > 0) {
+        emitEvent('TICK', { t: st.tr - 1 });
+      } else {
+        clearInterval(timerInt); timerInt = null;
+        emitEvent('T_CTRL', { run: false, t: 0, log: '⏰ Tempo scaduto!' });
       }
+    }, 1000);
+    emitEvent('T_CTRL', { run: true, t: st.tr, log: 'Timer avviato.' });
+  }
+}
 
-      if(locUI.zoomType === 'ctx') {
-        document.getElementById('mod-f-content').innerHTML = ctxFront;
-        document.getElementById('mod-b-content').innerHTML = ctxBack;
-        document.getElementById('modal-inner').classList.toggle('flipped', ctxFlip);
-      }
+function adminSetCustomTimer() {
+  const val = parseInt(document.getElementById('custom-min').value, 10);
+  if (!isNaN(val) && val > 0) {
+    clearInterval(timerInt); timerInt = null;
+    emitEvent('T_CTRL', { run: false, t: val * 60, log: `Timer impostato a ${val} min.` });
+    document.getElementById('custom-min').value = '';
+  }
+}
+
+function adminResetTimer() {
+  clearInterval(timerInt); timerInt = null;
+  emitEvent('T_CTRL', { run: false, t: DEFAULT_TIMER, log: 'Timer resettato a 10:00.' });
+}
+
+function adminToggleFeature(v) {
+  emitEvent('CFG', { ac: v, log: `Modalità random libera ai Team: ${v ? 'ATTIVATA' : 'DISATTIVATA'}` });
+}
+
+function adminAddTable() {
+  const n  = (document.getElementById('new-t-name').value.trim()) || `Tavolo ${st.tables.length + 1}`;
+  const sc = document.getElementById('new-t-scen').value;
+  const id = 't' + Date.now().toString().slice(-6);
+  document.getElementById('new-t-name').value = '';
+  emitEvent('ADD_T', { id, n, sc, log: `Creato tavolo "${n}" (${sc})` });
+}
+
+function adminDelTable(id) {
+  if (confirm('Eliminare questo tavolo e tutti i suoi dati?')) {
+    emitEvent('DEL_T', { id, log: `Tavolo ${id} eliminato.` });
+  }
+}
+
+function adminAssign(tid, key) {
+  const t = st.tables.find(x => x.id === tid);
+  if (!t) return;
+  if (t.hist.some(h => h.id === key)) { alert('Questa carta è già stata affrontata dal team.'); return; }
+  emitEvent('ASSIGN', { tid, k: key, log: `Regia → [${key.toUpperCase()}] a ${t.name}` });
+}
+
+function adminAssignRandom(tid) {
+  const t     = st.tables.find(x => x.id === tid);
+  if (!t) return;
+  const avail = CARD_KEYS.filter(k => !t.hist.some(h => h.id === k));
+  if (avail.length === 0) { alert('Carte esaurite per questo tavolo.'); return; }
+  const rKey  = avail[Math.floor(Math.random() * avail.length)];
+  emitEvent('ASSIGN', { tid, k: rKey, log: `Regia (random) → [${rKey.toUpperCase()}] a ${t.name}` });
+}
+
+function adminUnlock(tid) {
+  emitEvent('UNLOCK', { tid, log: `Regia ha sbloccato l'hint per ${tid}` });
+}
+
+function adminReplySOS(tid, el) {
+  emitEvent('SOS_REPLY', { tid, log: `Regia in arrivo al ${tid}` });
+  if (el) el.remove();
+}
+
+function clearLogs() { emitEvent('CLR', {}); }
+
+// ─── TEAM ─────────────────────────────────────────────────────────────────────
+function getT() { return st.tables.find(x => x.id === myView) || null; }
+
+function hideOnboarding() {
+  const el = document.getElementById('tm-onboarding');
+  if (el) { el.classList.add('opacity-0', 'pointer-events-none'); }
+  locUI.hasRevealed = true;
+  renderTeam();
+}
+
+function sendSOS() {
+  const t = getT();
+  if (!t) return;
+  emitEvent('SOS', { tid: myView, log: `🆘 SOS dal ${t.name}` });
+  showTeamToast('🆘 SOS inviato! Il facilitatore è stato avvisato.', 'bg-yellow-300', 4000);
+}
+
+function showTeamToast(msg, bgClass, duration = 4000) {
+  const cont  = document.getElementById('tm-toasts');
+  if (!cont) return;
+  const toast = document.createElement('div');
+  toast.className = `${bgClass} border-4 border-[#1A1A1A] px-4 py-3 rounded-xl shadow-xl flex items-center justify-center gap-3 toast-anim w-full pointer-events-auto`;
+  toast.innerHTML = `<span class="font-display font-bold text-sm text-[#1A1A1A] text-center">${msg}</span>`;
+  cont.appendChild(toast);
+  setTimeout(() => toast.remove(), duration);
+}
+
+function renderTeam(isNewCard = false) {
+  const vTeam = document.getElementById('view-team');
+  if (!vTeam || vTeam.classList.contains('hidden')) return;
+
+  const t = getT();
+  if (!t) {
+    vTeam.innerHTML = `
+      <div class="h-screen w-full flex flex-col items-center justify-center font-display text-xl text-center p-8 bg-[#FDFBF7]">
+        <div class="text-5xl mb-4">🚨</div>
+        <div class="font-bold">Tavolo inesistente</div>
+        <div class="text-sm mt-4 text-gray-500">Chiedi al facilitatore di creare il tavolo e scansiona di nuovo il QR.</div>
+      </div>`;
+    return;
+  }
+
+  const d = DB[t.sc];
+
+  // Aggiorna header
+  document.getElementById('tm-view-id').textContent = t.name.toUpperCase();
+  document.getElementById('tm-title').textContent   = d.cx_f.t;
+  updateTimerDisplay();
+
+  // Pulsante random
+  document.getElementById('tm-btn-self').classList.toggle('hidden', !st.allowCrash);
+
+  // ── CARTA CONTESTO ──
+  renderContextCard(d, t);
+
+  // ── INVENTORY ──
+  renderInventory(t, d);
+
+  // ── CARTA IMPREVISTO ──
+  if (t.act !== null) {
+    renderChallengeCard(t, d, isNewCard);
+  } else {
+    const w = document.getElementById('tm-wrapper-imp');
+    if (w) w.classList.add('hidden');
+  }
+}
+
+function renderContextCard(d, t) {
+  const inner = document.getElementById('tm-card-ctx');
+  if (!inner) return;
+
+  const front = `
+    <div style="height:100%;display:flex;flex-direction:column;justify-content:space-between;padding:24px;position:relative;" class="riso-texture">
+      <button onclick="teamZoom(true,'ctx')" class="card-zoom-btn">🔍 Zoom</button>
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
+        ${d.icoSvg}
+        <h3 style="font-family:'Space Grotesk',sans-serif;font-size:1.3rem;font-weight:700;margin-top:16px;line-height:1.2;">${d.cx_f.t}</h3>
+        <p style="font-size:0.82rem;color:#6b7280;margin-top:12px;padding:0 8px;line-height:1.6;">${d.cx_f.d}</p>
+      </div>
+      <div style="border-top:2px solid #1A1A1A;padding-top:14px;text-align:left;">
+        <p style="font-size:9px;color:#9ca3af;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;">Target Assegnato</p>
+        <p style="font-size:0.85rem;font-family:'Space Grotesk',sans-serif;font-weight:700;">${d.tgt}</p>
+      </div>
+      <button onclick="teamFlipCtx()" style="position:absolute;bottom:16px;right:16px;background:#e5e7eb;color:#1A1A1A;padding:8px 16px;border-radius:12px;font-size:11px;font-weight:700;border:2px solid #1A1A1A;cursor:pointer;">↩ Dettagli</button>
+    </div>`;
+
+  const back = `
+    <div style="height:100%;display:flex;flex-direction:column;padding:24px;background:#FDFBF7;" class="riso-texture">
+      <button onclick="teamFlipCtx()" class="card-zoom-btn">↩ Gira</button>
+      <div style="border-bottom:2px solid #1A1A1A;padding-bottom:12px;font-family:'Space Grotesk',sans-serif;font-size:0.9rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;">${d.t}</div>
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:20px;padding-top:16px;font-size:0.85rem;">
+        <div>
+          <span style="font-weight:700;color:#9ca3af;font-size:9px;text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:4px;">${d.cx_b.t1}</span>
+          <p style="line-height:1.6;">${d.cx_b.d1}</p>
+        </div>
+        <div style="padding-top:16px;border-top:2px dashed #d1d5db;">
+          <span style="font-weight:700;color:#FF5A36;font-size:9px;text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:4px;">${d.cx_b.t2}</span>
+          <p style="font-weight:700;line-height:1.6;">${d.cx_b.d2}</p>
+        </div>
+      </div>
+    </div>`;
+
+  inner.innerHTML = `
+    <div class="card-front" style="backface-visibility:hidden;-webkit-backface-visibility:hidden;">${front}</div>
+    <div class="card-back" style="transform:rotateY(180deg);backface-visibility:hidden;-webkit-backface-visibility:hidden;">${back}</div>`;
+
+  inner.classList.toggle('flipped', locUI.ctxFlipped);
+}
+
+function renderInventory(t, d) {
+  const invBox = document.getElementById('tm-inventory-box');
+  if (!invBox) return;
+  if (t.hist.length > 0) {
+    invBox.classList.remove('hidden');
+    document.getElementById('tm-inv-count').textContent = `${t.hist.length}/3`;
+    document.getElementById('tm-inventory-list').innerHTML = t.hist.map(h => {
+      const icon   = h.st === 'new' ? '🔒' : (h.st === 'unlocked' ? '🔓' : '✅');
+      const active = t.act === h.id;
+      return `<button onclick="teamViewOld('${h.id}')" class="flex-shrink-0 text-xs font-bold px-3 py-2 rounded-lg border-2 retro-btn transition-colors whitespace-nowrap snap-center ${active ? 'bg-[#1A1A1A] text-white border-[#1A1A1A]' : 'bg-gray-100 text-[#1A1A1A] border-gray-300 hover:bg-gray-200'}">${icon} ${d.cards[h.id].f}</button>`;
+    }).join('');
+  } else {
+    invBox.classList.add('hidden');
+  }
+}
+
+function renderChallengeCard(t, d, isNewCard) {
+  const w = document.getElementById('tm-wrapper-imp');
+  if (!w) return;
+
+  // Mostra wrapper con animazione se è la prima volta
+  if (w.classList.contains('hidden')) {
+    w.classList.remove('hidden');
+    w.classList.add('card-appear');
+    setTimeout(() => w.classList.remove('card-appear'), 600);
+  }
+
+  const card = d.cards[t.act];
+  const hEntry = t.hist.find(x => x.id === t.act) || { st: 'new' };
+  const hSt    = hEntry.st;
+  const isBlur = hSt === 'new';
+  const isSurv = hSt === 'survived';
+
+  const avatarUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(card.f + t.act)}&backgroundColor=FDFBF7`;
+
+  const front = `
+    <div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;position:relative;" class="riso-texture">
+      <button onclick="teamZoom(true,'imp')" class="card-zoom-btn">🔍 Zoom</button>
+      <div style="width:80px;height:80px;border-radius:50%;border:4px solid #1A1A1A;overflow:hidden;background:#FDFBF7;flex-shrink:0;margin-bottom:16px;">
+        <img src="${avatarUrl}" style="width:100%;height:100%;object-fit:cover;" alt="avatar">
+      </div>
+      <h3 style="font-family:'Space Grotesk',sans-serif;font-size:1.1rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#FF5A36;line-height:1.2;margin-bottom:16px;padding:0 8px;">${card.f}</h3>
+      <div style="background:white;padding:16px;border-radius:12px;border:2px solid #1A1A1A;font-size:0.82rem;font-weight:600;line-height:1.6;text-align:left;width:100%;position:relative;box-shadow:inset 0 2px 4px rgba(0,0,0,0.06);">
+        <span style="position:absolute;top:-10px;left:12px;background:#1A1A1A;color:white;font-size:8px;font-family:monospace;padding:2px 8px;border-radius:4px;letter-spacing:0.1em;">MESSAGGIO</span>
+        <div style="margin-top:8px;">${card.d}</div>
+      </div>
+      <button onclick="teamFlipImp()" style="width:100%;margin-top:16px;background:#FF5A36;color:white;font-family:'Space Grotesk',sans-serif;font-weight:700;padding:12px;border-radius:12px;border:2px solid #1A1A1A;font-size:0.85rem;cursor:pointer;">RISOLVI LA SFIDA ➔</button>
+    </div>`;
+
+  const pwSection = isBlur ? `
+    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(255,255,255,0.6);backdrop-filter:blur(4px);border-radius:12px;">
+      <input type="text" id="pw-input-${t.act}" placeholder="Password..." autocomplete="off"
+        style="width:160px;font-size:1.2rem;text-align:center;border:4px solid #1A1A1A;padding:8px;border-radius:12px;margin-bottom:12px;font-weight:700;outline:none;"
+        onkeydown="if(event.key==='Enter') checkPw('${t.act}')">
+      <button onclick="checkPw('${t.act}')" style="background:#1A1A1A;color:white;font-size:12px;font-weight:700;padding:10px 24px;border-radius:12px;border:2px solid #1A1A1A;cursor:pointer;">SBLOCCA HINT 🔓</button>
+    </div>` : '';
+
+  const surviveBtn = !isBlur && !isSurv ? `
+    <button onclick="teamSurvive('${t.act}')" style="width:100%;margin-top:auto;background:#22c55e;color:white;font-family:'Space Grotesk',sans-serif;font-weight:700;padding:12px;border-radius:12px;border:2px solid #1A1A1A;font-size:0.85rem;cursor:pointer;">DOMINATO SUL CANVAS ✅</button>` : '';
+  const survBadge = isSurv ? `
+    <div style="width:100%;margin-top:auto;background:white;color:#16a34a;border:2px solid #22c55e;font-family:'Space Grotesk',sans-serif;font-weight:700;padding:12px;border-radius:12px;text-align:center;font-size:0.82rem;letter-spacing:0.1em;transform:rotate(-2deg);">SFIDA SUPERATA ✅</div>` : '';
+
+  const back = `
+    <div style="height:100%;display:flex;flex-direction:column;padding:24px;background:#FDFBF7;" class="riso-texture">
+      <button onclick="teamFlipImp()" class="card-zoom-btn">↩ Gira</button>
+      <div style="border-bottom:2px solid #1A1A1A;padding-bottom:12px;padding-top:8px;font-family:'Space Grotesk',sans-serif;font-size:0.85rem;font-weight:700;color:${d.c};">${card.b1}</div>
+      <div style="flex:1;display:flex;flex-direction:column;padding-top:16px;gap:16px;font-size:0.82rem;">
+        <p style="line-height:1.6;">${card.bd1}</p>
+        <div style="padding-top:16px;border-top:2px dashed #d1d5db;flex:1;display:flex;flex-direction:column;position:relative;">
+          <span style="color:#FF5A36;font-weight:700;font-size:9px;text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:8px;">${card.b2}</span>
+          <div style="${isBlur ? 'filter:blur(6px);user-select:none;pointer-events:none;opacity:0.4;' : ''}flex:1;">
+            <p style="font-weight:700;background:#fefce8;padding:16px;border:2px solid #fde68a;border-radius:12px;color:#1A1A1A;font-size:0.82rem;line-height:1.6;">
+              ${isBlur ? card.bd2 : '💡 <i>Suggerimento per il Canvas</i><br><br>' + card.hint}
+            </p>
+          </div>
+          ${pwSection}
+          ${surviveBtn}
+          ${survBadge}
+        </div>
+      </div>
+    </div>`;
+
+  const inner = document.getElementById('tm-card-imp');
+  if (!inner) return;
+  inner.innerHTML = `
+    <div class="card-front" style="backface-visibility:hidden;-webkit-backface-visibility:hidden;">${front}</div>
+    <div class="card-back" style="transform:rotateY(180deg);backface-visibility:hidden;-webkit-backface-visibility:hidden;">${back}</div>`;
+
+  inner.classList.toggle('flipped', !!t.flip);
+
+  // Effetti nuova carta
+  if (isNewCard && locUI.hasRevealed) {
+    playSound('alarm');
+    document.body.classList.add('alarm-flash');
+    setTimeout(() => document.body.classList.remove('alarm-flash'), 1200);
+    setTimeout(() => {
+      const stage = document.getElementById('team-stage');
+      if (stage) stage.scrollTo({ top: stage.scrollHeight, behavior: 'smooth' });
+    }, 200);
+    showTeamToast('⚡ Nuova sfida ricevuta!', 'bg-[#FF5A36] text-white', 3500);
+  }
+}
+
+// ─── TEAM ACTIONS ─────────────────────────────────────────────────────────────
+function teamFlipCtx() {
+  locUI.ctxFlipped = !locUI.ctxFlipped;
+  const inner = document.getElementById('tm-card-ctx');
+  if (inner) inner.classList.toggle('flipped', locUI.ctxFlipped);
+  // Aggiorna anche modal se aperto su ctx
+  if (locUI.zoomType === 'ctx') {
+    const mi = document.getElementById('modal-inner');
+    if (mi) mi.classList.toggle('flipped', locUI.ctxFlipped);
+  }
+}
+
+function teamFlipImp() {
+  const t = getT();
+  if (!t) return;
+  emitEvent('FLIP', { tid: t.id, flip: !t.flip });
+}
+
+function teamFlipModal() {
+  if (locUI.zoomType === 'ctx') teamFlipCtx();
+  else teamFlipImp();
+}
+
+function teamZoom(open, type = 'imp') {
+  const m = document.getElementById('modal-zoom');
+  if (!m) return;
+
+  if (open) {
+    locUI.zoomType = type;
+    const t = getT();
+    const d = t ? DB[t.sc] : null;
+
+    // Popola il modal clonando il contenuto della carta
+    const srcInner  = type === 'ctx' ? document.getElementById('tm-card-ctx') : document.getElementById('tm-card-imp');
+    const modInner  = document.getElementById('modal-inner');
+    const modFront  = document.getElementById('mod-front');
+    const modBack   = document.getElementById('mod-back');
+
+    if (srcInner && modFront && modBack) {
+      const fronts = srcInner.querySelectorAll('.card-front');
+      const backs  = srcInner.querySelectorAll('.card-back');
+      if (fronts[0]) modFront.innerHTML = fronts[0].innerHTML;
+      if (backs[0])  modBack.innerHTML  = backs[0].innerHTML;
+      // Sync flip state
+      const isFlipped = type === 'ctx' ? locUI.ctxFlipped : !!(t && t.flip);
+      if (modInner) modInner.classList.toggle('flipped', isFlipped);
     }
 
-    function updateTeamTime() { 
-      const box = document.getElementById('tm-timer'); 
-      if(st.run || st.tr < fasi[st.ph].t) { 
-        box.classList.remove('hidden'); 
-        box.innerText = `${Math.floor(st.tr/60).toString().padStart(2,'0')}:${(st.tr%60).toString().padStart(2,'0')}`; 
-      } else box.classList.add('hidden'); 
-    }
-    
-    let ctxFlip = false; 
-    function teamFlipCtx() { ctxFlip = !ctxFlip; document.getElementById('tm-card-ctx').classList.toggle('flipped', ctxFlip); if(locUI.zoomType==='ctx') document.getElementById('modal-inner').classList.toggle('flipped', ctxFlip); }
-    
-    function checkPw(k) { const val = document.getElementById('pw-input-'+k)?.value; if(val && val.toLowerCase() === 'urca-rischio') { emitEvent('UNLOCK', { tid: myView, log: `Il tavolo ha decifrato la password!` }); playSound('win'); } else alert("Password errata!"); }
-    function teamSurvive(k) { playSound('win'); emitEvent('SURVIVE', { tid: myView, log: `✅ Sfida Dominata!` }); }
+    m.classList.remove('hidden'); m.classList.add('flex');
+    requestAnimationFrame(() => m.classList.remove('opacity-0'));
+  } else {
+    m.classList.add('opacity-0');
+    setTimeout(() => { m.classList.add('hidden'); m.classList.remove('flex'); }, 300);
+  }
+}
 
-    function teamSelfShock() { 
-      const t = getT(); 
-      const keys = ['sfida', 'imprevisto', 'limite'];
-      const avail = keys.filter(k => !t.hist.some(h=>h.id === k));
-      if(avail.length===0) return; 
-      const rKey = avail[Math.floor(Math.random()*avail.length)]; 
-      emitEvent('SHOCK', {tid: t.id, imp: rKey, flip: false, log: `Pescata autonoma ➔ ${db[t.sc].cards[rKey].f}`}); 
-    }
-    
-    function teamViewOld(k) { emitEvent('VIEW', {tid: myView, imp: k}); }
-    
-    function teamZoom(val, type = 'imp') { 
-      const m = document.getElementById('modal-zoom'); 
-      if(val) { 
-        locUI.zoomType = type; renderTeam();
-        m.classList.remove('hidden'); m.classList.add('flex'); setTimeout(()=>m.classList.remove('opacity-0'), 10); 
-      } else { m.classList.add('opacity-0'); setTimeout(()=>{m.classList.add('hidden');m.classList.remove('flex');}, 300); } 
-    }
-    function teamFlipImp() { const t = getT(); emitEvent('FLIP', {tid: t.id, flip: !t.flip}); }
-    function teamFlipModal() { if(locUI.zoomType === 'ctx') teamFlipCtx(); else teamFlipImp(); }
+function checkPw(k) {
+  const input = document.getElementById('pw-input-' + k);
+  if (!input) return;
+  if (input.value.trim().toLowerCase() === HINT_PASSWORD) {
+    emitEvent('UNLOCK', { tid: myView, log: `🔓 Team ha decifrato la password per [${k}]` });
+    playSound('win');
+  } else {
+    input.value = '';
+    input.placeholder = '❌ Errata!';
+    setTimeout(() => { input.placeholder = 'Password...'; }, 1500);
+  }
+}
 
-    window.onload = init;
-  </script>
+function teamSurvive(k) {
+  playSound('win');
+  emitEvent('SURVIVE', { tid: myView, log: `✅ Sfida [${k}] dominata da ${myView}` });
+}
+
+function teamSelfShock() {
+  const t     = getT();
+  if (!t) return;
+  const avail = CARD_KEYS.filter(k => !t.hist.some(h => h.id === k));
+  if (avail.length === 0) { showTeamToast('Tutte le carte sono già state affrontate!', 'bg-gray-300', 3000); return; }
+  const rKey  = avail[Math.floor(Math.random() * avail.length)];
+  emitEvent('ASSIGN', { tid: t.id, k: rKey, log: `🎲 Pesca random team → [${rKey.toUpperCase()}]` });
+}
+
+function teamViewOld(k) {
+  // Torna su una carta già vista
+  emitEvent('VIEW', { tid: myView, k: k });
+}
+
+// ─── BOOTSTRAP ───────────────────────────────────────────────────────────────
+window.addEventListener('load', init);
+</script>
 </body>
 </html>
