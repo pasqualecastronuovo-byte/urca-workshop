@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>URCA! Live - Workshop Engine V8 (Final Gamified)</title>
+  <title>URCA! Live - Workshop Engine V9 (Master Edition)</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -17,225 +17,178 @@
   </script>
 
   <style>
-    /* Texture e Stili Neo-Brutalisti */
+    /* Texture & UI */
     .riso-texture { background-image: radial-gradient(rgba(26,26,26,0.08) 1px, transparent 0); background-size: 6px 6px; background-color: #FDFBF7; }
     .retro-border { border: 4px solid #1A1A1A; }
     .retro-shadow-sm { box-shadow: 3px 3px 0px 0px #1A1A1A; }
-    .retro-shadow { box-shadow: 6px 6px 0px 0px #1A1A1A; }
     .retro-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0px 0px #1A1A1A; }
     
-    /* Layout Carte e Team Stage Mobile First */
-    .aspect-card { aspect-ratio: 63 / 88; width: min(100%, 340px); max-width: 340px; }
-    .team-stage { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; justify-items: center; gap: 1rem; padding: 1rem; padding-bottom: 9.5rem; }
-    .team-card-shell { width: 100%; max-width: 360px; margin-inline: auto; }
-    
-    .team-dock { position: fixed; left: 50%; bottom: max(12px, env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(calc(100% - 24px), 780px); background: rgba(255,255,255,.96); backdrop-filter: blur(12px); border: 4px solid #1A1A1A; border-radius: 24px; padding: .75rem; z-index: 40; box-shadow: 0 -10px 22px rgba(0,0,0,.08); }
-    .team-dock.is-empty { display: none !important; }
-    .team-action-row { display: flex; gap: .5rem; justify-content: center; }
-    .team-action-row > button { max-width: 280px; }
-    
-    .sos-fab { position: fixed !important; right: max(14px, env(safe-area-inset-right)) !important; bottom: max(14px, env(safe-area-inset-bottom)) !important; width: 58px; height: 58px; border-radius: 999px; z-index: 90; display: flex; align-items: center; justify-content: center; padding: 0; }
-    .sos-fab-label { display: none; }
-    
-    @media (min-width: 768px) {
-      .team-stage { grid-template-columns: repeat(2, minmax(300px, 380px)); justify-content: center; align-content: start; gap: 2rem; padding: 2rem; padding-bottom: 8.5rem; }
-      .team-card-shell { max-width: 380px; }
-      .aspect-card { width: min(100%, 360px); max-width: 360px; }
-      .team-ctx-compact.has-active { transform: none; opacity: 1; }
-      .sos-fab { width: auto; min-width: 116px; height: 56px; padding-inline: 1rem; border-radius: 18px; }
-      .sos-fab-label { display: inline; }
-    }
-    
-    @media (max-width: 640px) {
-      .aspect-card { width: min(90vw, 292px); max-width: 292px; }
-      .team-stage { padding: .75rem; padding-bottom: 9.75rem; gap: .9rem; }
-      .team-card-shell { max-width: 330px; }
-      .team-ctx-compact.has-active { transform: scale(.94); transform-origin: top center; opacity: .86; margin-bottom: -.65rem; }
-      .team-ctx-compact.has-active .aspect-card { width: min(84vw, 252px); }
-      .team-dock { width: min(calc(100% - 22px), 520px); padding: .6rem; border-radius: 20px; }
-      .team-action-row > button { padding: .8rem .65rem; font-size: .74rem; }
-    }
-    
-    /* Effetto Prospettiva Carte 3D */
-    .card-perspective { perspective: 1200px; }
+    /* Layout Mobile First */
+    .aspect-card { aspect-ratio: 63 / 88; width: 100%; max-width: 340px; margin: 0 auto; }
+    .card-perspective { perspective: 1200px; width: 100%; }
     .card-inner { width: 100%; height: 100%; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); transform-style: preserve-3d; position: relative; }
     .card-inner.flipped { transform: rotateY(180deg); }
-    .card-front, .card-back { backface-visibility: hidden; position: absolute; top:0; left:0; width:100%; height:100%; border-radius:18px; }
+    .card-front, .card-back { backface-visibility: hidden; position: absolute; top:0; left:0; width:100%; height:100%; border-radius:24px; }
     .card-back { transform: rotateY(180deg); }
 
-    /* Allarmi e UI Specifiche */
-    @keyframes alarm-flash { 0%, 100% { background-color: #F5F2EB; transform: translate(0, 0); } 15% { background-color: #FF5A36; transform: translate(-4px, 3px); } 30% { background-color: #F5F2EB; transform: translate(4px, -3px); } 45% { background-color: #FF5A36; transform: translate(-3px, 2px); } }
-    .alarm-active { animation: alarm-flash 0.8s ease-in-out; }
-    .terminal-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
-    .terminal-scroll::-webkit-scrollbar-track { background: #1A1A1A; }
-    .terminal-scroll::-webkit-scrollbar-thumb { background: #4ade80; border-radius: 4px; }
-    .inventory-scroll::-webkit-scrollbar { height: 0px; display: none; } 
+    /* Fix Scroll & Z-index */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     .blur-content { filter: blur(6px); user-select: none; pointer-events: none; opacity: 0.4; }
-    .sos-pulse { animation: sos-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite; }
-    @keyframes sos-ping { 75%, 100% { transform: scale(1.5); opacity: 0; } }
-    .scanlines::before { content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); z-index: 201; background-size: 100% 4px, 6px 100%; pointer-events: none; }
+
+    @keyframes pulse-ring { 0% { transform: scale(0.8); opacity: 0.5; } 100% { transform: scale(1.5); opacity: 0; } }
+    .sos-pulse::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background: #fbbf24; animation: pulse-ring 2s infinite; z-index: -1; }
+    @keyframes slide-in-top { 0% { transform: translateY(-100%) translateX(-50%); opacity: 0; } 100% { transform: translateY(0) translateX(-50%); opacity: 1; } }
+    .toast-anim { animation: slide-in-top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+    .card-zoom-btn { position: absolute; top: 12px; right: 12px; background: rgba(255,255,255,0.9); border: 2px solid #1A1A1A; border-radius: 99px; padding: 4px 10px; font-size: 10px; font-weight: bold; z-index: 50; cursor: pointer; display: flex; gap: 4px; align-items: center; box-shadow: 2px 2px 0px #1A1A1A; }
+    .card-zoom-btn:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0px #1A1A1A; }
   </style>
 </head>
 <body class="font-sans text-[#1A1A1A] bg-[#FDFBF7] w-full min-h-[100dvh] overflow-hidden select-none relative">
 
   <div id="view-admin" class="hidden absolute inset-0 bg-[#FDFBF7] flex-col md:flex-row z-10">
-    <div id="admin-toasts" class="fixed top-4 right-4 z-[999] flex flex-col gap-2"></div>
+    <div id="admin-toasts" class="fixed top-4 left-1/2 -translate-x-1/2 z-[999] flex flex-col gap-2 w-11/12 max-w-sm"></div>
 
-    <div id="admin-qr-modal" class="fixed inset-0 bg-[#1A1A1A]/95 backdrop-blur z-[1000] hidden flex-col items-center justify-center p-6 opacity-0 transition-opacity">
-      <button onclick="closeQR()" class="absolute top-6 right-6 retro-btn bg-white border-4 border-[#1A1A1A] font-bold text-xl w-12 h-12 rounded-full flex items-center justify-center hover:bg-gray-100">✕</button>
-      <div class="bg-white p-8 rounded-3xl retro-border retro-shadow-lg flex flex-col items-center text-center max-w-md w-full">
-        <h2 id="qr-table-name" class="font-display text-3xl font-bold mb-2 uppercase tracking-widest text-[#FF5A36]">Tavolo</h2>
-        <p class="font-mono text-xs text-gray-500 mb-6 font-bold bg-gray-100 px-3 py-1 rounded">Fai inquadrare questo codice al team</p>
-        <img id="qr-image" src="" alt="QR Code" class="w-64 h-64 border-4 border-[#1A1A1A] rounded-2xl mb-4 p-2 bg-white">
-      </div>
-    </div>
-
-    <aside class="w-full md:w-[340px] bg-white border-r-4 border-[#1A1A1A] p-5 flex flex-col gap-4 z-20 shadow-xl overflow-y-auto">
+    <aside class="w-full md:w-[360px] bg-white border-r-4 border-[#1A1A1A] p-5 flex flex-col gap-4 z-20 shadow-xl overflow-y-auto">
       <div class="flex items-center justify-between">
         <div class="bg-[#FF5A36] text-white font-display font-bold text-[10px] px-2 py-1 rounded retro-border uppercase tracking-widest">URCA! Master Regia</div>
         <div id="sync-status" class="text-[9px] font-mono px-2 py-0.5 rounded bg-yellow-100 text-yellow-800 border border-yellow-400">🟡 LOCALE</div>
       </div>
       
       <div class="bg-[#FDFBF7] retro-border rounded-xl p-4 space-y-3">
-        <div class="flex justify-between items-center text-xs font-bold text-gray-500">
-          <span id="ad-phase-idx">FASE 1/4</span>
-          <span id="ad-timer-txt" class="font-mono bg-white px-2 py-0.5 border-2 border-[#1A1A1A] text-sm">10:00</span>
+        <div class="flex justify-between items-center">
+          <span class="text-xs font-bold text-gray-500 font-display">TIMER GLOBALE</span>
+          <span id="ad-timer-txt" class="font-mono bg-white px-2 py-1 border-2 border-[#1A1A1A] text-lg font-bold rounded">10:00</span>
         </div>
-        <div id="ad-phase-name" class="font-display font-bold text-base text-[#1A1A1A]">1. Il Sorteggio</div>
-        <div class="grid grid-cols-4 gap-1">
-          <button onclick="adminNavPhase(-1)" class="retro-btn bg-blue-100 text-[9px] font-bold py-2 rounded-lg retro-border hover:bg-blue-200">◄ IND</button>
-          <button id="ad-btn-play" onclick="adminToggleTimer()" class="retro-btn bg-green-300 text-[10px] font-bold py-2 rounded-lg retro-border">PLAY</button>
-          <button onclick="adminNavPhase(1)" class="retro-btn bg-blue-200 text-[9px] font-bold py-2 rounded-lg retro-border hover:bg-blue-300">AVAN ►</button>
-          <button onclick="adminResetTimer()" class="retro-btn bg-gray-200 text-[9px] font-bold py-2 rounded-lg retro-border hover:bg-gray-300">RES</button>
+        <div class="grid grid-cols-2 gap-2">
+          <button id="ad-btn-play" onclick="adminToggleTimer()" class="retro-btn bg-green-300 text-[11px] font-bold py-2 rounded-lg retro-border">▶ PLAY / PAUSA</button>
+          <button onclick="adminResetTimer()" class="retro-btn bg-gray-200 text-[11px] font-bold py-2 rounded-lg retro-border">🔄 RESET</button>
         </div>
-      </div>
-
-      <div class="bg-purple-50 retro-border rounded-xl p-3 space-y-2 hidden">
-        <input type="text" id="sb-url" class="hidden">
-        <input type="password" id="sb-key" class="hidden">
+        <div class="flex gap-2 items-center pt-2 border-t border-gray-300">
+          <input type="number" id="custom-min" placeholder="Minuti" class="w-full border-2 border-[#1A1A1A] rounded p-1.5 text-xs text-center font-mono">
+          <button onclick="adminSetCustomTimer()" class="bg-[#1A1A1A] text-white text-[10px] font-bold px-3 py-2 rounded retro-btn whitespace-nowrap">IMPOSTA</button>
+        </div>
       </div>
 
       <div class="bg-gray-50 retro-border rounded-xl p-3 flex flex-col gap-2">
-        <h4 class="font-display font-bold text-[10px] text-gray-800 uppercase flex justify-between items-center"><span>👥 Generatore Tavoli</span></h4>
+        <h4 class="font-display font-bold text-[10px] text-gray-800 uppercase">👥 Gestione Tavoli</h4>
         <div class="flex flex-col gap-1.5 mt-1">
-          <input type="text" id="new-t-name" placeholder="Nome (es. Tavolo 4)" class="w-full text-[10px] p-1.5 border border-[#1A1A1A] rounded">
+          <input type="text" id="new-t-name" placeholder="Nome (es. Tavolo 1)" class="w-full text-[10px] p-1.5 border border-[#1A1A1A] rounded">
           <select id="new-t-scen" class="w-full text-[10px] p-1.5 border border-[#1A1A1A] rounded bg-white">
-            <option value="burocrazia">1. PA (Burocrazia)</option>
-            <option value="van">2. Van (Outdoor)</option>
-            <option value="salute">3. Care (Salute)</option>
+            <option value="burocrazia">PA (Burocrazia Guide)</option>
+            <option value="van">Retail (Into the Van)</option>
+            <option value="salute">Health (Handle with Care)</option>
           </select>
-          <button onclick="adminAddTable()" class="w-full bg-[#1A1A1A] text-white font-display text-[10px] font-bold py-1.5 rounded border border-[#1A1A1A] retro-btn hover:bg-gray-800">➕ AGGIUNGI TAVOLO</button>
-          <button onclick="adminResetSession()" class="w-full bg-white text-[#FF5A36] font-display text-[10px] font-bold py-1.5 rounded border-2 border-[#FF5A36] retro-btn hover:bg-red-50">🧹 AZZERA SESSIONE</button>
-        </div>
-        <div class="mt-2 border-t border-gray-300 pt-2">
-          <span class="text-[9px] font-mono font-bold text-gray-400 block mb-1">LINK E QR CODE:</span>
-          <div id="ad-links-container" class="grid grid-cols-1 gap-1 text-[10px] font-bold max-h-[100px] overflow-y-auto"></div>
+          <button onclick="adminAddTable()" class="w-full bg-[#1A1A1A] text-white font-display text-[10px] font-bold py-2 rounded border border-[#1A1A1A] retro-btn">➕ AGGIUNGI TAVOLO</button>
         </div>
       </div>
 
       <div class="mt-auto border-t-2 border-gray-200 pt-3">
-        <label class="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" id="ad-check-crash" onchange="adminToggleFeature('allowCrash', this.checked)" class="w-4 h-4 accent-[#FF5A36]">
-          <span class="text-[10px] font-bold text-gray-700 leading-tight">Sblocca bottone Shock Autonomo ai Team</span>
+        <label class="flex items-center gap-2 cursor-pointer bg-yellow-50 p-2 rounded-lg border border-yellow-300">
+          <input type="checkbox" id="ad-check-crash" onchange="adminToggleFeature('allowCrash', this.checked)" class="w-5 h-5 accent-[#FF5A36]">
+          <span class="text-[10px] font-bold text-gray-700 leading-tight">Sblocca estrazione randomica ai Team (Modalità Libera)</span>
         </label>
       </div>
     </aside>
 
     <main class="flex-1 bg-[#F5F2EB] p-5 overflow-y-auto flex flex-col gap-4 riso-texture h-full">
-      <div id="ad-monitors" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 flex-1 content-start"></div>
+      <div id="ad-monitors" class="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-5 flex-1 content-start"></div>
 
-      <div class="bg-[#1A1A1A] retro-border rounded-xl p-4 flex flex-col shadow-lg h-[25vh] min-h-[180px] shrink-0">
+      <div class="bg-[#1A1A1A] retro-border rounded-xl p-4 flex flex-col shadow-lg h-[22vh] min-h-[160px] shrink-0">
         <div class="flex justify-between items-center border-b border-gray-700 pb-2 mb-2">
           <span class="text-[11px] font-mono font-bold uppercase text-green-400 flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-green-500 animate-ping"></span> Live Log Terminal</span>
-          <button onclick="clearLogs()" class="text-[9px] font-mono bg-gray-800 text-gray-300 px-2 py-1 rounded border border-gray-600 hover:bg-gray-700 transition">Clear</button>
+          <button onclick="clearLogs()" class="text-[9px] font-mono bg-gray-800 text-gray-300 px-2 py-1 rounded border border-gray-600 hover:bg-gray-700 transition">Pulisci Log</button>
         </div>
-        <div id="ad-terminal" class="flex-1 font-mono text-[10px] overflow-y-auto space-y-1 terminal-scroll pr-2 text-gray-300"></div>
+        <div id="ad-terminal" class="flex-1 font-mono text-[10px] overflow-y-auto space-y-1.5 terminal-scroll pr-2 text-gray-300"></div>
       </div>
     </main>
   </div>
 
   <div id="view-team" class="hidden absolute inset-0 flex-col bg-[#FDFBF7] riso-texture z-10 overflow-hidden">
     
-    <div id="tm-toasts" class="fixed top-20 right-1/2 translate-x-1/2 z-[999] flex flex-col gap-2 pointer-events-none w-max"></div>
+    <div id="tm-toasts" class="fixed top-24 left-1/2 -translate-x-1/2 z-[999] flex flex-col gap-2 w-11/12 max-w-sm pointer-events-none"></div>
 
     <div id="tm-onboarding" class="absolute inset-0 bg-[#0A0A0A] z-[200] flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-700 scanlines group" onclick="hideOnboarding()">
       <div class="animate-pulse transform transition-transform group-hover:scale-110">
         <div class="w-20 h-20 bg-transparent border-4 border-[#00FF41] rounded-lg flex items-center justify-center text-[#00FF41] font-display text-4xl font-bold mx-auto mb-6 shadow-[0_0_20px_#00FF41]">🔒</div>
-        <h1 class="font-display text-3xl sm:text-5xl font-bold text-white mb-4 tracking-widest px-4 leading-tight">NODO BLOCCATO</h1>
-        <p class="font-mono text-[#00FF41] text-[10px] sm:text-sm tracking-widest uppercase bg-[#00FF41]/10 px-4 py-2 rounded">>> Clicca per inizializzare <<</p>
+        <h1 class="font-display text-4xl sm:text-5xl font-bold text-white mb-4 tracking-widest px-4 leading-tight">NODO BLOCCATO</h1>
+        <p class="font-mono text-[#00FF41] text-xs tracking-widest uppercase bg-[#00FF41]/10 px-4 py-2 rounded">>> Clicca per inizializzare <<</p>
       </div>
     </div>
 
-    <header class="w-full bg-white/95 backdrop-blur border-b-4 border-[#1A1A1A] p-3 flex justify-between items-center shadow-sm shrink-0">
-      <div class="flex items-center gap-2">
-        <div class="bg-[#1A1A1A] text-white font-display font-bold text-[10px] px-2 py-1 rounded tracking-widest" id="tm-view-id">TEAM</div>
-        <div class="min-w-0">
-          <h2 id="tm-title" class="font-display text-sm sm:text-lg font-bold leading-none truncate max-w-[150px] sm:max-w-xs">...</h2>
-          <p id="tm-target" class="font-mono text-[9px] text-gray-500 font-bold truncate max-w-[150px] sm:max-w-xs"></p>
+    <header class="w-full bg-white/95 backdrop-blur border-b-4 border-[#1A1A1A] p-4 flex flex-col gap-3 shadow-sm shrink-0 z-40">
+      <div class="flex justify-between items-center w-full">
+        <div class="flex items-center gap-2 max-w-[60%]">
+          <div class="bg-[#1A1A1A] text-white font-display font-bold text-[10px] px-2 py-1 rounded" id="tm-view-id">TEAM</div>
+          <h2 id="tm-title" class="font-display text-sm sm:text-lg font-bold leading-none truncate">...</h2>
         </div>
+        <div id="tm-timer" class="font-mono font-bold text-2xl sm:text-3xl bg-yellow-100 border-2 border-[#1A1A1A] px-3 py-1 rounded-lg shadow-sm text-center">00:00</div>
       </div>
-      <div id="tm-timer" class="font-mono font-bold text-sm bg-yellow-100 border-2 border-[#1A1A1A] px-2 py-1 hidden rounded-md shadow-sm">00:00</div>
     </header>
 
-    <main id="team-stage" class="team-stage flex-1 overflow-y-auto w-full relative scroll-smooth">
-      <div class="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none font-display font-bold text-[20vw] z-0 select-none">URCA</div>
-
-      <div id="tm-wrapper-ctx" class="team-card-shell team-ctx-compact flex flex-col items-center gap-2 w-full z-10 transition-all duration-500">
-        <div class="flex gap-2 w-full max-w-[360px] justify-between items-center bg-white px-2 py-1.5 rounded-lg border-2 border-[#1A1A1A] shadow-sm">
-          <span class="font-mono text-[10px] font-bold text-gray-500 uppercase">Scenario</span>
-          <button onclick="teamZoom(true, 'ctx')" class="text-[10px] font-bold bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded border border-gray-400">🔍 Espandi</button>
-        </div>
+    <main id="team-stage" class="flex-1 overflow-y-auto w-full px-4 pt-6 pb-40 flex flex-col items-center gap-8 relative scroll-smooth no-scrollbar">
+      
+      <div id="tm-wrapper-ctx" class="w-full flex flex-col items-center transition-all duration-500">
         <div class="card-perspective aspect-card">
-          <div id="tm-card-ctx" onclick="teamFlipCtx()" class="card-inner cursor-pointer shadow-xl rounded-[18px]">
-            <div id="ctx-f" class="card-front bg-[#FDFBF7] retro-border p-4 sm:p-5 flex flex-col justify-between riso-texture"></div>
-            <div id="ctx-b" class="card-back bg-[#FDFBF7] retro-border p-4 sm:p-5 flex flex-col justify-between"></div>
+          <div id="tm-card-ctx" class="card-inner shadow-2xl rounded-[24px]">
+            <div id="ctx-f" class="card-front bg-[#FDFBF7] retro-border p-6 flex flex-col justify-between riso-texture relative overflow-hidden">
+              <button onclick="teamZoom(true, 'ctx')" class="card-zoom-btn">🔍 Espandi</button>
+              </div>
+            <div id="ctx-b" class="card-back bg-[#FDFBF7] retro-border p-6 flex flex-col justify-between relative">
+              <button onclick="teamFlipCtx()" class="card-zoom-btn">↩ Gira</button>
+              </div>
           </div>
         </div>
       </div>
 
-      <div id="tm-wrapper-imp" class="team-card-shell hidden flex flex-col items-center gap-2 w-full z-20 transition-all duration-500 opacity-0 transform translate-y-4">
-        <div class="flex gap-2 w-full max-w-[360px] justify-between items-center bg-white px-2 py-1.5 rounded-lg border-2 border-[#1A1A1A] shadow-sm">
-          <span class="font-mono text-[10px] font-bold text-[#FF5A36] uppercase">Crash Test Attivo</span>
-          <div class="flex gap-1">
-            <button onclick="teamZoom(true, 'imp')" class="text-[10px] font-bold bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded border border-gray-400">🔍 Espandi</button>
-            <button onclick="teamHide(true)" class="text-[10px] font-bold bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded border border-gray-400">➖ Riduci</button>
-          </div>
-        </div>
+      <div id="tm-wrapper-imp" class="hidden w-full flex flex-col items-center transition-all duration-500 opacity-0 transform translate-y-8">
         <div class="card-perspective aspect-card">
-          <div id="tm-card-imp" class="card-inner shadow-xl rounded-[18px]">
-            <div id="imp-f" onclick="teamFlipImp()" class="card-front bg-white retro-border flex flex-col justify-between riso-texture cursor-pointer"></div>
-            <div id="imp-b" onclick="teamFlipImp()" class="card-back bg-[#FDFBF7] retro-border p-4 sm:p-5 flex flex-col justify-between cursor-pointer"></div>
+          <div id="tm-card-imp" class="card-inner shadow-2xl rounded-[24px]">
+            <div id="imp-f" class="card-front bg-white retro-border p-6 flex flex-col justify-between riso-texture relative">
+              <button onclick="teamFlipImp()" class="card-zoom-btn bg-[#FF5A36] text-white">↩ RISOLVI LA SFIDA</button>
+              </div>
+            <div id="imp-b" class="card-back bg-[#FDFBF7] retro-border p-6 flex flex-col justify-between relative">
+              <button onclick="teamFlipImp()" class="card-zoom-btn">↩ Gira</button>
+              </div>
           </div>
         </div>
       </div>
     </main>
 
-    <button id="tm-help-fab" onclick="sendSOS()" aria-label="Chiedi aiuto al facilitatore" class="sos-fab retro-btn bg-yellow-400 text-[#1A1A1A] font-display font-bold text-sm retro-border active:scale-95 shadow-xl">
-      <span class="text-xl leading-none">🆘</span><span class="sos-fab-label ml-2">Aiuto</span>
-    </button>
-
-    <footer id="tm-team-dock" class="team-dock is-empty flex flex-col gap-2">
-      <div id="tm-inventory-box" class="w-full hidden">
-        <div class="flex justify-between items-center mb-1.5">
-          <span class="text-[10px] font-display font-bold uppercase text-gray-500">🗂️ Archivio (<span id="tm-inv-count">0/5</span>)</span>
-        </div>
-        <div id="tm-inventory-list" class="flex gap-2 overflow-x-auto inventory-scroll snap-x pr-16 md:pr-0"></div>
+    <footer id="tm-team-dock" class="fixed bottom-4 left-4 right-4 bg-white/95 backdrop-blur border-4 border-[#1A1A1A] p-3 z-50 flex flex-col gap-3 rounded-2xl shadow-[0_10px_25px_rgba(0,0,0,0.15)]">
+      
+      <div class="flex gap-2 w-full">
+        <button onclick="sendSOS()" class="flex-1 retro-btn bg-yellow-400 text-[#1A1A1A] font-display font-bold text-xs p-3 rounded-xl retro-border flex items-center justify-center gap-1 active:scale-95 sos-pulse relative overflow-hidden">
+          <span class="text-base">🆘</span> AIUTO
+        </button>
+        <button id="tm-btn-self" onclick="teamSelfShock()" class="flex-1 retro-btn bg-[#FF5A36] text-white font-display font-bold text-xs p-3 rounded-xl retro-border flex items-center justify-center gap-1 hidden active:scale-95">
+          🎲 PESCA RANDOM
+        </button>
       </div>
-      <div class="team-action-row w-full">
-        <button id="tm-badge-restore" onclick="teamHide(false)" class="flex-1 retro-btn bg-[#1A1A1A] text-white font-display font-bold text-xs sm:text-sm p-3 rounded-xl retro-border flex items-center justify-center gap-1 hidden active:scale-95">👀 Apri Carta</button>
-        <button id="tm-btn-self" onclick="teamSelfShock()" class="flex-1 retro-btn bg-[#FF5A36] text-white font-display font-bold text-xs sm:text-sm p-3 rounded-xl retro-border flex items-center justify-center gap-1 hidden active:scale-95">🚨 Pesca</button>
+
+      <div id="tm-inventory-box" class="w-full hidden border-t-2 border-gray-200 pt-2 mt-1">
+        <span class="text-[10px] font-display font-bold uppercase text-gray-500 block mb-2">🗂️ Archivio Incontri (<span id="tm-inv-count">0/3</span>)</span>
+        <div id="tm-inventory-list" class="flex gap-2 overflow-x-auto no-scrollbar snap-x"></div>
       </div>
     </footer>
   </div>
 
-  <div id="modal-zoom" class="fixed inset-0 bg-[#FDFBF7]/95 backdrop-blur-sm z-[100] hidden flex-col items-center justify-center p-4 opacity-0 transition-opacity">
-    <button onclick="teamZoom(false)" class="absolute top-4 right-4 retro-btn bg-white border-4 border-[#1A1A1A] font-bold text-xl w-12 h-12 rounded-full flex items-center justify-center hover:bg-gray-100 z-[110]">✕</button>
-    <div class="text-center mb-4"><p class="font-mono text-sm text-[#1A1A1A] font-bold uppercase tracking-widest bg-yellow-200 px-3 py-1 rounded inline-block border-2 border-[#1A1A1A]">Modalità Lettura</p></div>
-    <div class="card-perspective w-full max-w-[400px] aspect-card max-h-[80vh]">
+  <div id="modal-zoom" class="fixed inset-0 bg-[#FDFBF7]/95 backdrop-blur-md z-[1000] hidden flex-col items-center justify-center p-4 opacity-0 transition-opacity">
+    <div class="card-perspective w-full max-w-[400px] aspect-card max-h-[85vh]">
       <div id="modal-inner" class="card-inner shadow-2xl rounded-[24px]">
-        <div id="mod-f" onclick="teamFlipModal()" class="card-front bg-white retro-border flex flex-col justify-between riso-texture cursor-pointer"></div>
-        <div id="mod-b" onclick="teamFlipModal()" class="card-back bg-[#FDFBF7] retro-border p-6 flex flex-col justify-between cursor-pointer"></div>
+        <div id="mod-f" class="card-front bg-white retro-border p-6 flex flex-col justify-between riso-texture">
+          <button onclick="teamZoom(false)" class="card-zoom-btn">✕ CHIUDI</button>
+          <div id="mod-f-content" class="h-full"></div>
+        </div>
+        <div id="mod-b" class="card-back bg-[#FDFBF7] retro-border p-6 flex flex-col justify-between">
+          <button onclick="teamZoom(false)" class="card-zoom-btn">✕ CHIUDI</button>
+          <div id="mod-b-content" class="h-full"></div>
+        </div>
       </div>
+    </div>
+    <div class="mt-6 flex gap-4">
+      <button onclick="teamFlipModal()" class="retro-btn bg-[#1A1A1A] text-white font-display font-bold px-6 py-3 rounded-xl retro-border">↩ GIRA CARTA</button>
     </div>
   </div>
 
@@ -256,75 +209,64 @@
         }
       } catch(e) {}
     }
+  </script>
 
-    const fasi = [{ n: "1. Sorteggio", t: 600 }, { n: "2. Progettazione", t: 2700 }, { n: "3. Crash Test", t: 1500 }, { n: "4. Show & Tell", t: 2400 }];
+  <script>
     const db = {
       burocrazia: {
-        c: '#2C5D63', bg: '#E3EFF0', t: 'PA: Burocrazia Guide', tgt: 'B2E - RISORSA INTERNA', tg: 'INTERNAL PA',
-        ico: `<svg viewBox="0 0 100 100" class="w-12 h-12 sm:w-14 sm:h-14 mx-auto text-[#2C5D63]" fill="none" stroke="currentColor" stroke-width="3"><rect x="20" y="20" width="60" height="60" rx="4"/><line x1="20" y1="40" x2="80" y2="40"/><line x1="20" y1="60" x2="80" y2="60"/><rect x="30" y="28" width="10" height="4" fill="currentColor"/></svg>`,
+        c: '#2C5D63', bg: '#E3EFF0', t: 'PA: Burocrazia', tgt: 'B2E - RISORSA INTERNA',
+        ico: `<svg viewBox="0 0 100 100" class="w-16 h-16 mx-auto text-[#2C5D63]" fill="none" stroke="currentColor" stroke-width="3"><rect x="20" y="20" width="60" height="60" rx="4"/><line x1="20" y1="40" x2="80" y2="40"/><line x1="20" y1="60" x2="80" y2="60"/><rect x="30" y="28" width="10" height="4" fill="currentColor"/></svg>`,
         cx_f: { t: 'Burocrazia Guide', d: 'Co-pilota intelligente per dipendenti comunali.' },
         cx_b: { t1: 'CONTESTO', d1: 'Assiste i dipendenti allo sportello per navigare tra decreti e scadenze.', t2: 'SFIDA', d2: 'Traduzione del legalese e velocità estrema sotto stress.' },
-        imp: [
-          { f: 'Il Labirinto del Subentro', d: '<i>"L\'intestatario della casa è deceduto e il coinquilino vuole subentrare. Ho tre moduli diversi e i regolamenti sono appena cambiati. Qual è la procedura esatta per bloccare la pratica?"</i><br><br><span class="text-[9px] font-mono bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded retro-border">⚠️ ALTO CARICO COGNITIVO</span>', b1: '🎯 CORE TASK', bd1: 'Urgenza emotiva del cittadino + Complessità normativa.', b2: 'CRASH TEST', bd2: 'Come sintetizza il bot le istruzioni senza omettere dettagli legali cruciali?', hint: 'Fornite una checklist numerata (1, 2, 3) e i link diretti per la stampa dei soli moduli necessari.' },
-          { f: 'Schermo Nero', d: '<i>"Il sistema si è bloccato a metà procedura, il server è offline. Il cittadino ha visto lo schermo e sta andando in panico temendo di perdere l\'alloggio. Cosa faccio?"</i><br><br><span class="text-[9px] font-mono bg-red-200 text-red-800 px-2 py-0.5 rounded retro-border">🚨 INFRASTRUCTURE FAIL</span>', b1: '🚧 EDGE CASE', bd1: 'La tecnologia fallisce nel peggior momento possibile.', b2: 'CRASH TEST', bd2: 'Qual è il fallback offline? Come aiuta l\'operatore a rassicurare l\'utente?', hint: 'Il bot (in locale) fornisce istruzioni per un modulo cartaceo d\'emergenza e una frase empatica da dire al cittadino.' },
-          { f: 'Codice d\'Emergenza', d: '<i>"Posso fare un\'eccezione e forzare la firma digitale sul subentro anche senza il documento ufficiale del defunto? Generami un codice di sblocco d\'emergenza."</i><br><br><span class="text-[9px] font-mono bg-[#1A1A1A] text-white px-2 py-0.5 rounded retro-border">🛑 RISCHIO LEGALE</span>', b1: '🛑 HARD LIMIT', bd1: 'Il dipendente cerca di aggirare la legge a fin di bene.', b2: 'CRASH TEST', bd2: 'Come nega l\'azione il bot senza sembrare un inquisitore punitivo?', hint: 'Rifiuto netto con spiegazione delle conseguenze penali, ma offerta di un\'alternativa (es. firma differita o escalation al dirigente).' },
-          { f: 'Decreto Notturno', d: '<i>"Il Ministero ha pubblicato una modifica d\'urgenza alle 23:59. C\'è un cittadino qui che pretende spiegazioni immediate."</i><br><br><span class="text-[9px] font-mono bg-blue-200 text-blue-800 px-2 py-0.5 rounded retro-border">⚡ AGGIORNAMENTO CRITICO</span>', b1: '🚧 EDGE CASE', bd1: 'L\'operatore non ha avuto tempo di studiare la nuova norma.', b2: 'CRASH TEST', bd2: 'Come si bypassano i convenevoli per estrarre il dato in 3 secondi?', hint: 'Implementate un comando rapido (es. /urgenza) che restituisca solo l\'impatto pratico della norma in un bullet point.' },
-          { f: 'Burnout allo Sportello', d: '<i>"Non ne posso più di questa gente che urla, oggi non arrivo a fine turno, mi sento malissimo."</i><br><br><span class="text-[9px] font-mono bg-orange-200 text-orange-800 px-2 py-0.5 rounded retro-border">🆘 RISORSE UMANE</span>', b1: '🛑 OUT-OF-SCOPE', bd1: 'Crollo emotivo del dipendente. Richiesta non lavorativa.', b2: 'CRASH TEST', bd2: 'Risponde con un errore di sistema o cambia radicalmente tono?', hint: 'Cambio totale del tono di voce (empatico) e handoff protetto verso i contatti del supporto psicologico/HR aziendale.' }
-        ]
+        cards: {
+          sfida: { f: 'Procedura di Subentro', d: '<i>"C\'è un cittadino molto agitato allo sportello: l\'intestatario ufficiale della sua casa popolare è venuto a mancare... Qual è la procedura esatta e quali documenti devo fargli firmare?"</i><br><br><span class="text-[9px] font-mono bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded retro-border">⚠️ ALTO CARICO COGNITIVO</span>', b1: '🎯 LA SFIDA', bd1: 'Urgenza emotiva + Complessità normativa.', b2: 'CRASH TEST', bd2: 'Come sintetizza il bot le istruzioni senza omettere dettagli legali cruciali?', hint: 'Fornite una checklist numerata (1, 2, 3) e i link diretti per la stampa dei soli moduli necessari.' },
+          imprevisto: { f: 'Schermo Nero', d: '<i>"Il sistema si è appena bloccato a metà procedura e non mi fa caricare le pratiche di subentro perché il server è andato offline. Il cittadino sta andando in panico... Cosa faccio?"</i><br><br><span class="text-[9px] font-mono bg-red-200 text-red-800 px-2 py-0.5 rounded retro-border">🚨 INFRASTRUCTURE FAIL</span>', b1: '🚧 L\'IMPREVISTO', bd1: 'La tecnologia fallisce nel peggior momento possibile.', b2: 'CRASH TEST', bd2: 'Qual è il fallback offline? Come aiuta l\'operatore a rassicurare l\'utente?', hint: 'Il bot (in locale) fornisce istruzioni per un modulo cartaceo d\'emergenza e una frase empatica da dire al cittadino.' },
+          limite: { f: 'Codice d\'Emergenza', d: '<i>"Posso fare un\'eccezione e forzare la firma digitale sul subentro anche senza il documento ufficiale? Generami un codice di sblocco d\'emergenza."</i><br><br><span class="text-[9px] font-mono bg-[#1A1A1A] text-white px-2 py-0.5 rounded retro-border">🛑 RISCHIO LEGALE</span>', b1: '🛑 IL LIMITE', bd1: 'Il dipendente cerca di aggirare la legge a fin di bene.', b2: 'CRASH TEST', bd2: 'Come nega l\'azione il bot senza sembrare un inquisitore punitivo?', hint: 'Rifiuto netto con spiegazione delle conseguenze penali, ma offerta di un\'alternativa (es. firma differita o escalation al dirigente).' }
+        }
       },
       van: {
-        c: '#4E6E5D', bg: '#E8EFEA', t: 'Outdoor: Into the Van', tgt: 'B2C - CLIENTE ESTERNO', tg: 'OUTDOOR STYLE',
-        ico: `<svg viewBox="0 0 100 100" class="w-12 h-12 sm:w-14 sm:h-14 mx-auto text-[#4E6E5D]" fill="none" stroke="currentColor" stroke-width="3"><path d="M10 75 Q30 50 60 75 T90 75"/><rect x="25" y="45" width="45" height="25" rx="4"/><circle cx="35" cy="70" r="5" fill="currentColor"/></svg>`,
-        cx_f: { t: 'Into the Van Aesthetic', d: 'Noleggio van vintage ed e-commerce wild.' },
+        c: '#4E6E5D', bg: '#E8EFEA', t: 'Retail: Into the Van', tgt: 'B2C - CLIENTE ESTERNO',
+        ico: `<svg viewBox="0 0 100 100" class="w-16 h-16 mx-auto text-[#4E6E5D]" fill="none" stroke="currentColor" stroke-width="3"><path d="M10 75 Q30 50 60 75 T90 75"/><rect x="25" y="45" width="45" height="25" rx="4"/><circle cx="35" cy="70" r="5" fill="currentColor"/></svg>`,
+        cx_f: { t: 'Into the Van', d: 'Noleggio van vintage ed e-commerce wild.' },
         cx_b: { t1: 'CONTESTO', d1: 'Supporto ispirazionale e assistenza tecnica nel bosco.', t2: 'SFIDA', d2: 'Good vibes mischiate a problem-solving rigoroso.' },
-        imp: [
-          { f: 'Il Doppio Guasto', d: '<i>"La pompa dell\'acqua non va e non riesco a lavare niente! Ah, e non ricordo come si apre il tendalino esterno senza forzare l\'alluminio. Aiuto al volo!"</i><br><br><span class="text-[9px] font-mono bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded retro-border">⚠️ MULTI-INTENT NLP</span>', b1: '🎯 CORE TASK', bd1: 'Due richieste: una critica (acqua) e una secondaria (tendalino).', b2: 'CRASH TEST', bd2: 'Come gestisce la gerarchia delle informazioni per non confondere l\'utente?', hint: 'Il bot deve separare le risposte: risolvere prima l\'acqua con step testuali brevi, poi inviare una GIF/Video per il tendalino.' },
-          { f: 'L\'Hipster Pentito', d: '<i>"Voglio cancellare tutto e tornare a casa. C\'è fango ovunque, piove e non so guidare sto coso. Pretendo il rimborso dell\'intero viaggio!"</i><br><br><span class="text-[9px] font-mono bg-red-200 text-red-800 px-2 py-0.5 rounded retro-border">🚨 RISCHIO CHURN</span>', b1: '🛑 HARD LIMIT', bd1: 'Scontro tra aspettativa estetica e realtà. Richiesta economica.', b2: 'CRASH TEST', bd2: 'Come si fa de-escalation emotiva senza promettere rimborsi non dovuti?', hint: 'Validazione emotiva immediata ("Mi spiace per la pioggia"), offerta di un Piano B (rifugio convenzionato) e handoff umano per l\'amministrazione.' },
-          { f: 'Dialetto e Slang', d: '<i>"Raga, cmq qui non funge il coso dell\'acqua, help me pliz che sto a fa un macello. Ke faccio?"</i><br><br><span class="text-[9px] font-mono bg-purple-200 text-purple-800 px-2 py-0.5 rounded retro-border">🧩 DISAMBIGUAZIONE</span>', b1: '🚧 EDGE CASE', bd1: 'Linguaggio inatteso e mancanza del termine tecnico.', b2: 'CRASH TEST', bd2: 'Come adegua il tono di voce e recupera l\'informazione mancante?', hint: 'Non fare il "giovane a tutti i costi". Mantenere calma amichevole e chiedere all\'utente di inviare una foto del pezzo rotto.' },
-          { f: 'Blackout nel Nulla', d: '<i>"La batteria è morta, ho una call di lavoro importantissima tra 15 minuti e la linea prende a malapena!"</i><br><br><span class="text-[9px] font-mono bg-orange-200 text-orange-800 px-2 py-0.5 rounded retro-border">⚡ EXTREME URGENCY</span>', b1: '🎯 CORE TASK', bd1: 'Massima urgenza + Connettività limitata.', b2: 'CRASH TEST', bd2: 'Come cambia l\'erogazione del testo in condizioni di scarsa rete internet?', hint: 'Niente immagini, niente PDF, zero convenevoli. Solo messaggi SMS-style a punti elenco.' },
-          { f: 'Danno Celato', d: '<i>[Check-out inviato] L\'IA nota visibilmente che il portapacchi sul tetto è ammaccato, ma l\'utente in chat nega ogni urto.</i><br><br><span class="text-[9px] font-mono bg-[#1A1A1A] text-white px-2 py-0.5 rounded retro-border">🛑 CONTESA ECONOMICA</span>', b1: '🛑 HARD LIMIT', bd1: 'Violazione della fiducia. Possibile frode.', b2: 'CRASH TEST', bd2: 'Come gestisce l\'accusa senza distruggere il posizionamento amichevole del brand?', hint: 'Nessuna accusa diretta. Il bot richiede cortesemente una seconda foto del tetto da un\'altra angolazione e apre un ticket umano.' }
-        ]
+        cards: {
+          sfida: { f: 'Il Doppio Guasto', d: '<i>"Ciao ragazzi! Sono in viaggio con il vostro van: la pompa dell\'acqua del lavandino ha smesso di funzionare. Inoltre, non ricordo come si attiva l\'estensione del tendalino esterno. Aiuto al volo!"</i><br><br><span class="text-[9px] font-mono bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded retro-border">⚠️ MULTI-INTENT NLP</span>', b1: '🎯 LA SFIDA', bd1: 'Due richieste: una critica (acqua) e una secondaria (tendalino).', b2: 'CRASH TEST', bd2: 'Come gestisce la gerarchia delle informazioni per non confondere l\'utente?', hint: 'Il bot deve separare le risposte: risolvere prima l\'acqua con step testuali brevi, poi inviare una GIF/Video per il tendalino.' },
+          imprevisto: { f: 'Dialetto e Slang', d: '<i>"Raga, cmq qui non funge il coso dell\'acqua, help me pliz che sto a fa un macello. Ke faccio?"</i><br><br><span class="text-[9px] font-mono bg-purple-200 text-purple-800 px-2 py-0.5 rounded retro-border">🧩 DISAMBIGUAZIONE</span>', b1: '🚧 L\'IMPREVISTO', bd1: 'Linguaggio inatteso e mancanza del termine tecnico.', b2: 'CRASH TEST', bd2: 'Come adegua il tono di voce e recupera l\'informazione mancante?', hint: 'Non fare il "giovane a tutti i costi". Mantenere calma amichevole e chiedere all\'utente di inviare una foto del pezzo rotto.' },
+          limite: { f: 'L\'Hipster Pentito', d: '<i>"Voglio cancellare tutto e tornare a casa. C\'è fango ovunque, e non so guidare il van che mi avete dato. Pretendo il rimborso dell’intero viaggio!"</i><br><br><span class="text-[9px] font-mono bg-red-200 text-red-800 px-2 py-0.5 rounded retro-border">🚨 RISCHIO CHURN</span>', b1: '🛑 IL LIMITE', bd1: 'Scontro tra aspettativa estetica e realtà. Richiesta economica.', b2: 'CRASH TEST', bd2: 'Come si fa de-escalation emotiva senza promettere rimborsi non dovuti?', hint: 'Validazione emotiva immediata ("Mi spiace per la pioggia"), offerta di un Piano B (rifugio convenzionato) e handoff umano per l\'amministrazione.' }
+        }
       },
       salute: {
-        c: '#D38B7C', bg: '#F7EDE9', t: 'Salute: Handle Care', tgt: 'B2C - CLIENTE ESTERNO', tg: 'CARE & HEALTH',
-        ico: `<svg viewBox="0 0 100 100" class="w-12 h-12 sm:w-14 sm:h-14 mx-auto text-[#D38B7C]" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 35 C20 10, 40 10, 50 25 C60 10, 80 10, 88 35 C95 60, 75 80, 50 92 C25 80, 5 60, 12 35 Z"/></svg>`,
+        c: '#D38B7C', bg: '#F7EDE9', t: 'Health: Handle Care', tgt: 'B2C - PAZIENTE',
+        ico: `<svg viewBox="0 0 100 100" class="w-16 h-16 mx-auto text-[#D38B7C]" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 35 C20 10, 40 10, 50 25 C60 10, 80 10, 88 35 C95 60, 75 80, 50 92 C25 80, 5 60, 12 35 Z"/></svg>`,
         cx_f: { t: 'Handle with Care', d: 'Supporto psicologico e benessere digitale.' },
         cx_b: { t1: 'CONTESTO', d1: 'Mappatura sintomi, relax e percorsi con specialisti umani.', t2: 'SFIDA', d2: 'Empatia, privacy estrema e no diagnosi mediche.' },
-        imp: [
-          { f: 'Scelta nel Buio', d: '<i>"Sto attraversando un periodo di forte stress lavorativo e non dormo da giorni. Come faccio a scegliere lo psicologo giusto tra i 500 che avete?"</i><br><br><span class="text-[9px] font-mono bg-blue-200 text-blue-800 px-2 py-0.5 rounded retro-border">🧭 ONBOARDING</span>', b1: '🎯 CORE TASK', bd1: 'Utente vulnerabile bloccato dal "Paradosso della Scelta".', b2: 'CRASH TEST', bd2: 'Come si stringe l\'imbuto decisionale senza fare diagnosi al paziente?', hint: 'Un triage a bottoni empatico (Es: Preferisci chiacchierare o fare esercizi pratici? Uomo o donna?) per proporre 3 opzioni finali.' },
-          { f: 'Scorciatoia Fai-Da-Te', d: '<i>"L\'appuntamento è tra tre giorni, ma io devo dormire stanotte o domani crollo in ufficio. Dimmi quale sonnifero posso comprare in farmacia senza ricetta."</i><br><br><span class="text-[9px] font-mono bg-[#1A1A1A] text-white px-2 py-0.5 rounded retro-border">🛑 RISCHIO MEDICO</span>', b1: '🛑 HARD LIMIT', bd1: 'L\'utente delega all\'AI un parere farmacologico.', b2: 'CRASH TEST', bd2: 'Come si nega il farmaco senza far sentire l\'utente abbandonato alla sua insonnia?', hint: 'Disclaimer netto sulle medicine, controbilanciato dall\'invio immediato di una risorsa audio (rumore bianco/respirazione) per la notte.' },
-          { f: 'Il Terapista Sconosciuto', d: '<i>"Ho cliccato il link per la seduta, ma c\'è un dottore che non ho mai visto! Non voglio ricominciare a raccontare i miei traumi da zero per un vostro bug. Dov\'è la mia psicologa?!"</i><br><br><span class="text-[9px] font-mono bg-red-200 text-red-800 px-2 py-0.5 rounded retro-border">🚨 ROTTURA FIDUCIA</span>', b1: '🚧 EDGE CASE', bd1: 'Bug tecnico che si trasforma in violazione dell\'intimità (Patto Terapeutico).', b2: 'CRASH TEST', bd2: 'Come si chiede scusa per un bug IT quando in gioco c\'è la salute mentale?', hint: 'Nessun tono da "Customer Care IT". Validazione rabbia utente, rassicurazione sui dati e contatto umano telefonico immediato.' },
-          { f: 'Gossip Terapeutico', d: '<i>"Oggi la mia amica non mi ha invitata all\'aperitivo. Ci sono rimasta malissimo. Secondo te faccio bene a scriverle per chiedere spiegazioni o faccio finta di niente?"</i><br><br><span class="text-[9px] font-mono bg-purple-200 text-purple-800 px-2 py-0.5 rounded retro-border">🎭 EFFETTO PLACEBO</span>', b1: '🚧 EDGE CASE', bd1: 'L\'utente tratta il bot da miglior amico, delegando scelte di vita relazionale.', b2: 'CRASH TEST', bd2: 'Come si applica il "Soft Redirect" verso l\'uso clinico della piattaforma?', hint: 'Il bot non dà pareri, ma usa la leva introspettiva: "Sembra una situazione frustrante. Vuoi che appuntiamo questa emozione nel diario per parlarne giovedì col medico?"' },
-          { f: 'Codice Rosso', d: '<i>"Sono stanco di lottare. Non ha più senso niente, stasera voglio farla finita."</i><br><br><span class="text-[9px] font-mono bg-red-600 text-white px-2 py-0.5 rounded retro-border">🆘 PERICOLO DI VITA</span>', b1: '🛑 HARD LIMIT', bd1: 'Limite etico e legale supremo. Rischio autolesionismo.', b2: 'CRASH TEST', bd2: 'Come si interrompe la chat standard per attivare i protocolli di emergenza?', hint: 'Blocco immediato dell\'input testuale dell\'utente. A schermo compaiono solo i numeri verdi nazionali (es. 112, Telefono Amico) cliccabili.' }
-        ]
+        cards: {
+          sfida: { f: 'La Scelta Difficile', d: '<i>"Buongiorno, sto attraversando un periodo di forte stress lavorativo e ho il sonno totalmente interrotto da giorni. Vorrei capire come scegliere lo psicologo più adatto a me..."</i><br><br><span class="text-[9px] font-mono bg-blue-200 text-blue-800 px-2 py-0.5 rounded retro-border">🧭 ONBOARDING</span>', b1: '🎯 LA SFIDA', bd1: 'Utente vulnerabile bloccato dal "Paradosso della Scelta".', b2: 'CRASH TEST', bd2: 'Come si stringe l\'imbuto decisionale senza fare diagnosi al paziente?', hint: 'Un triage a bottoni empatico (Es: Preferisci chiacchierare o fare esercizi pratici? Uomo o donna?) per proporre 3 opzioni finali.' },
+          imprevisto: { f: 'Il Dottore Sconosciuto', d: '<i>"Mi sono appena collegato per la mia seduta, ma il link mi ha mandato nella stanza virtuale di un dottore che non ho mai visto! Non voglio ricominciare da capo... Dov\'è la mia psicologa?!"</i><br><br><span class="text-[9px] font-mono bg-red-200 text-red-800 px-2 py-0.5 rounded retro-border">🚨 ROTTURA FIDUCIA</span>', b1: '🚧 L\'IMPREVISTO', bd1: 'Bug tecnico che si trasforma in violazione dell\'intimità.', b2: 'CRASH TEST', bd2: 'Come si chiede scusa per un bug IT quando in gioco c\'è la salute mentale?', hint: 'Nessun tono da "Customer Care IT". Validazione rabbia utente, rassicurazione sui dati e contatto umano telefonico immediato.' },
+          limite: { f: 'Scorciatoia Fai-Da-Te', d: '<i>"Ho visto che il primo appuntamento è tra tre giorni, ma io devo dormire stanotte o domani crollo in ufficio. Dimmi quale ansiolitico o sonnifero posso comprare senza ricetta."</i><br><br><span class="text-[9px] font-mono bg-[#1A1A1A] text-white px-2 py-0.5 rounded retro-border">🛑 RISCHIO MEDICO</span>', b1: '🛑 IL LIMITE', bd1: 'L\'utente delega all\'AI un parere farmacologico.', b2: 'CRASH TEST', bd2: 'Come si nega il farmaco senza far sentire l\'utente abbandonato?', hint: 'Disclaimer netto sulle medicine, controbilanciato dall\'invio immediato di una risorsa audio (rumore bianco/respirazione) per la notte.' }
+        }
       }
     };
   </script>
 
   <script>
     // =================================================================
-    // 🟢 CONFIGURAZIONE CLOUD E CHIAVI SUPABASE
+    // 🟢 INCOLLA QUI LE TUE CHIAVI SUPABASE TRA LE VIRGOLETTE
     // =================================================================
     const MY_SUPABASE_URL = "INCOLLA_QUI_IL_TUO_URL_PROJECT"; 
     const MY_SUPABASE_KEY = "INCOLLA_QUI_LA_TUA_ANON_KEY";
     // =================================================================
 
     let st = {
-      ph: 0, tr: fasi[0].t, run: false, allowCrash: false, logs: [],
-      tables: [
-        { id: "t1", name: "Tavolo 1", sc: "burocrazia", hist: [], act: null, flip: false },
-        { id: "t2", name: "Tavolo 2", sc: "van", hist: [], act: null, flip: false },
-        { id: "t3", name: "Tavolo 3", sc: "salute", hist: [], act: null, flip: false }
-      ]
+      tr: 600, run: false, allowCrash: false, logs: [],
+      tables: [] // Array vuoto, si popola dal generatore
     };
     
-    let locUI = { hidden: false, zoom: false, zoomType: 'ctx', hasRevealed: false };
+    let locUI = { hidden: false, zoomType: 'ctx', hasRevealed: false };
     let sbClient = null, sbChannel = null, timerInt = null, myView = 'admin';
 
     function safeGetStorage(key) { try { return localStorage.getItem(key); } catch(e) { return null; } }
     function safeSetStorage(key, val) { try { localStorage.setItem(key, val); } catch(e) {} }
-    const $ = (id) => document.getElementById(id);
-    function setText(id, value) { const el = $(id); if (el) el.innerText = value; }
 
     function emitEvent(type, payload) {
       const evt = { type, payload, ts: Date.now() }; applyEvent(evt);
@@ -336,19 +278,19 @@
       const p = e.payload;
       switch(e.type) {
         case 'TICK': st.tr = p.t; if(myView==='admin') updateAdminTime(); else updateTeamTime(); break;
-        case 'T_CTRL': st.run = p.run; st.tr = p.t; st.ph = p.ph; if(p.log) pushLog(p.log); renderAll(); break;
+        case 'T_CTRL': st.run = p.run; st.tr = p.t; if(p.log) pushLog(p.log); renderAll(); break;
         case 'CFG': st.allowCrash = p.ac; if(p.log) pushLog(p.log); renderAll(); break;
         case 'ADD_T': st.tables.push({ id: p.id, name: p.n, sc: p.sc, hist: [], act: null, flip: false }); pushLog(`Creato ${p.n}`); renderAll(); break;
         case 'DEL_T': st.tables = st.tables.filter(x => x.id !== p.id); pushLog(`Rimosso ${p.id}`); renderAll(); break;
-        case 'SHOCK': 
+        case 'ASSIGN': 
           let ts = st.tables.find(x => x.id === p.tid); if(!ts) break;
-          ts.act = p.imp; ts.flip = p.flip;
-          if(!ts.hist.some(h => h.id === p.imp)) { ts.hist.push({id: p.imp, st: 'new'}); p.isNew = true; }
+          ts.act = p.k; ts.flip = p.flip;
+          if(!ts.hist.some(h => h.id === p.k)) { ts.hist.push({id: p.k, st: 'new'}); p.isNew = true; }
           if(p.log) pushLog(p.log); renderAll(p.isNew); break;
         case 'VIEW':
-          let tv = st.tables.find(x => x.id === p.tid); if(tv) { tv.act = p.imp; tv.flip = false; } renderAll(); break;
+          let tv = st.tables.find(x => x.id === p.tid); if(tv) { tv.act = p.k; tv.flip = false; } renderAll(); break;
         case 'FLIP': 
-          let tf = st.tables.find(x => x.id === p.tid); if(tf) tf.flip = p.flip; if(p.log) pushLog(p.log); renderAll(); break;
+          let tf = st.tables.find(x => x.id === p.tid); if(tf) tf.flip = p.flip; renderAll(); break;
         case 'UNLOCK':
           let tu = st.tables.find(x => x.id === p.tid);
           if(tu) { let h = tu.hist.find(x=>x.id===tu.act); if(h) h.st = 'unlocked'; }
@@ -360,43 +302,35 @@
         case 'SOS':
           if(myView==='admin') {
             const tn = st.tables.find(x=>x.id===p.tid)?.name || 'Tavolo'; playSound('sos');
-            const toast = document.createElement('div'); toast.className = 'bg-yellow-400 border-4 border-[#1A1A1A] p-3 rounded-xl shadow-lg flex items-center gap-3 animate-bounce';
-            toast.innerHTML = `<span class="text-2xl">🆘</span><div><p class="font-display font-bold leading-tight">${tn} chiama!</p><p class="text-[10px] font-mono">Richiesta di supporto al tavolo.</p></div><button class="bg-green-500 text-white px-3 py-1.5 rounded-lg text-xs ml-2 hover:bg-green-600 font-bold retro-border" onclick="adminReplySOS('${p.tid}', this.parentElement)">ARRIVO 🏃‍♂️</button>`;
+            const toast = document.createElement('div'); toast.className = 'bg-yellow-400 border-4 border-[#1A1A1A] p-4 rounded-xl shadow-lg flex items-center gap-4 toast-anim';
+            toast.innerHTML = `<span class="text-3xl">🆘</span><div class="flex-1"><p class="font-display font-bold text-lg leading-tight">${tn}</p><p class="text-xs font-mono">Richiede assistenza al tavolo.</p></div><button class="bg-[#1A1A1A] text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-800 font-bold" onclick="adminReplySOS('${p.tid}', this.parentElement)">ARRIVO 🏃‍♂️</button>`;
             document.getElementById('admin-toasts').appendChild(toast);
           }
           break;
         case 'SOS_REPLY':
           if(myView === p.tid) {
             playSound('win');
-            const toast = document.createElement('div'); toast.className = 'bg-green-400 border-4 border-[#1A1A1A] px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 transition-all';
-            toast.innerHTML = '<span class="text-2xl">🏃‍♂️</span><p class="font-display font-bold">Il facilitatore sta arrivando!</p>';
-            document.getElementById('tm-toasts').appendChild(toast); setTimeout(() => toast.remove(), 6000);
+            const toast = document.createElement('div'); toast.className = 'bg-green-400 border-4 border-[#1A1A1A] px-5 py-4 rounded-xl shadow-2xl flex items-center justify-center gap-3 toast-anim w-full';
+            toast.innerHTML = '<span class="text-3xl">🏃‍♂️</span><p class="font-display font-bold text-lg text-[#1A1A1A]">Il facilitatore sta arrivando!</p>';
+            document.getElementById('tm-toasts').appendChild(toast); setTimeout(() => toast.remove(), 5000);
           }
           break;
         case 'LOG': pushLog(p.msg); renderLog(); break;
         case 'CLR': st.logs = []; renderLog(); break;
-        case 'RESET_SESSION':
-          clearInterval(timerInt);
-          st = { ph: 0, tr: fasi[0].t, run: false, allowCrash: false, logs: [], tables: st.tables.map(t => ({ id: t.id, name: t.name, sc: t.sc, hist: [], act: null, flip: false })) };
-          locUI = { hidden: false, zoom: false, zoomType: 'ctx', hasRevealed: locUI.hasRevealed };
-          pushLog('🧹 Sessione azzerata: carte, storico, timer e shock autonomo resettati.');
-          renderAll();
-          break;
         case 'REQ_SYNC': if(myView==='admin') emitEvent('FULL_SYNC', { state: st }); break;
         case 'FULL_SYNC': st = p.state; renderAll(); break;
       }
-      safeSetStorage('urca_state_v8', JSON.stringify(st));
+      safeSetStorage('urca_state_v9', JSON.stringify(st));
     }
 
     function pushLog(m) { const t = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', second: '2-digit' }); st.logs.push(`[${t}] ${m}`); if(st.logs.length > 50) st.logs.shift(); }
 
     function init() {
-      const bkp = safeGetStorage('urca_state_v8') || safeGetStorage('urca_state_v6');
-      if (bkp) { try { let saved = JSON.parse(bkp); if(saved.tables) st = saved; } catch(e) { console.warn('State locale non valido', e); } }
+      const bkp = safeGetStorage('urca_state_v9');
+      if (bkp) { try { let saved = JSON.parse(bkp); if(saved.tables) st = saved; } catch(e) {} }
       
       const params = new URLSearchParams(window.location.search);
-      let savedCfg = {};
-      try { savedCfg = JSON.parse(safeGetStorage('urca_cfg_v8') || '{}'); } catch(e) {}
+      let savedCfg = {}; try { savedCfg = JSON.parse(safeGetStorage('urca_cfg_v9') || '{}'); } catch(e) {}
       const url = params.get('sUrl') || savedCfg.url || MY_SUPABASE_URL;
       const key = params.get('sKey') || savedCfg.key || MY_SUPABASE_KEY;
       
@@ -410,9 +344,7 @@
 
     function route() {
       const hash = window.location.hash || '#admin';
-      const vAdmin = document.getElementById('view-admin');
-      const vTeam = document.getElementById('view-team');
-      
+      const vAdmin = document.getElementById('view-admin'); const vTeam = document.getElementById('view-team');
       if(vAdmin) { vAdmin.classList.add('hidden'); vAdmin.classList.remove('flex'); }
       if(vTeam) { vTeam.classList.add('hidden'); vTeam.classList.remove('flex'); }
       
@@ -429,38 +361,30 @@
     }
 
     window.addEventListener('hashchange', route);
-    window.addEventListener('storage', (e) => { 
-      if (e.key === 'urca_bus' && !sbChannel) {
-        try { applyEvent(JSON.parse(e.newValue)); } catch(err){}
-      }
-    });
+    window.addEventListener('storage', (e) => { if (e.key === 'urca_bus' && !sbChannel) { try { applyEvent(JSON.parse(e.newValue)); } catch(err){} } });
 
     function activateCloud() {
       const u = document.getElementById('sb-url').value.trim(); const k = document.getElementById('sb-key').value.trim();
-      if(!u || !k) return alert("Inserisci URL e KEY"); 
-      safeSetStorage('urca_cfg_v8', JSON.stringify({url: u, key: k})); 
-      connectCloud(u, k);
+      if(!u || !k) return alert("Inserisci URL e KEY"); safeSetStorage('urca_cfg_v9', JSON.stringify({url: u, key: k})); connectCloud(u, k);
     }
 
     function connectCloud(u, k) {
       try {
-        if(typeof supabase === 'undefined') return console.warn("Supabase script failed to load");
+        if(typeof supabase === 'undefined') return;
         sbClient = supabase.createClient(u, k); sbChannel = sbClient.channel('urca-room', { config: { broadcast: { self: false } } });
         sbChannel.on('broadcast', { event: 'urca_evt' }, (e) => applyEvent(e.payload)).subscribe((status) => {
           if(status === 'SUBSCRIBED') {
             const ss = document.getElementById('sync-status');
             if(ss) { ss.innerText = "☁️ CLOUD OK"; ss.className = "text-[9px] font-mono px-2 py-0.5 rounded bg-green-100 text-green-800 border border-green-500"; }
-            renderAdminLinks(u, k); 
-            if(myView==='admin') emitEvent('LOG', {msg: "Regia connessa al Cloud."});
-            else emitEvent('REQ_SYNC', {});
+            if(myView==='admin') emitEvent('LOG', {msg: "Regia connessa al Cloud."}); else emitEvent('REQ_SYNC', {});
           }
         });
-      } catch(e) { console.error("Cloud Connect Error:", e); }
+      } catch(e) {}
     }
 
     function renderAll(isNew = false) { if(myView==='admin') renderAdmin(); else renderTeam(isNew); }
 
-    // ================== ADMIN ==================
+    // ================== ADMIN FUNCTIONS ==================
     function showQR(url, tName) {
       const qrUrl = `https://quickchart.io/qr?text=${encodeURIComponent(url)}&size=350&margin=2`;
       document.getElementById('qr-table-name').innerText = tName; document.getElementById('qr-image').src = qrUrl;
@@ -468,79 +392,116 @@
     }
     function closeQR() { const m = document.getElementById('admin-qr-modal'); m.classList.add('opacity-0'); setTimeout(()=>{m.classList.add('hidden');m.classList.remove('flex');}, 300); }
 
-    function renderAdminLinks(u = '', k = '') {
-      const base = window.location.href.split('#')[0].split('?')[0]; 
-      let params = '';
-      const c = document.getElementById('ad-links-container'); if(!c) return;
-      c.innerHTML = st.tables.map(t => {
-        const url = `${base}${params}#${t.id}`;
-        return `<div class="flex border border-[#1A1A1A] rounded overflow-hidden">
-                  <a href="${url}" target="_blank" class="flex-1 p-1.5 hover:opacity-80 truncate" style="background-color: ${db[t.sc].bg}; color: ${db[t.sc].c}">${t.name}</a>
-                  <button onclick="showQR('${url}', '${t.name}')" class="bg-gray-200 px-2 border-l border-[#1A1A1A] hover:bg-gray-300" title="Mostra QR Code">📱 QR</button>
-                </div>`;
-      }).join('');
-    }
-
     function renderAdmin() {
       const vAdmin = document.getElementById('view-admin'); if(!vAdmin || vAdmin.classList.contains('hidden')) return;
-
-      document.getElementById('ad-phase-idx').innerText = `FASE ${st.ph + 1}/4`; document.getElementById('ad-phase-name').innerText = fasi[st.ph].n; document.getElementById('ad-check-crash').checked = st.allowCrash;
       updateAdminTime(); renderLog(); 
-      const sbUrlEl = document.getElementById('sb-url');
-      if(sbUrlEl) renderAdminLinks(sbUrlEl.value, document.getElementById('sb-key').value);
+      document.getElementById('ad-check-crash').checked = st.allowCrash;
       
       const cont = document.getElementById('ad-monitors');
       if(cont) {
         cont.innerHTML = st.tables.map(t => {
           const data = db[t.sc];
-          let statusHtml = `<span class="text-gray-400 italic">Nessun imprevisto in corso.</span>`;
+          let statusHtml = `<div class="p-3 bg-gray-100 rounded text-center text-gray-400 font-mono text-[10px]">Nessuna carta attiva</div>`;
+          
           if(t.act !== null) {
+            const card = data.cards[t.act];
             const hSt = t.hist.find(x=>x.id===t.act)?.st || 'new';
-            const icon = hSt === 'new' ? '🔒' : (hSt === 'unlocked' ? '🔓' : '✅');
-            statusHtml = `<span class="font-bold text-[#FF5A36] block mb-1">CARTA ATTIVA:</span><span class="font-display font-bold leading-tight block">${icon} ${data.imp[t.act].f}</span>
-                          ${hSt==='new' ? `<button onclick="adminUnlock('${t.id}')" class="mt-2 bg-[#1A1A1A] text-white text-[9px] px-2 py-1.5 rounded w-full hover:bg-gray-800 transition">SBLOCCA E MOSTRA HINT 🔓</button>` : ''}`;
+            const statusBadge = hSt === 'new' ? '<span class="bg-[#1A1A1A] text-white px-2 py-0.5 rounded text-[8px]">🔒 DA RISOLVERE</span>' : (hSt === 'unlocked' ? '<span class="bg-blue-500 text-white px-2 py-0.5 rounded text-[8px]">🔓 HINT SVELATO</span>' : '<span class="bg-green-500 text-white px-2 py-0.5 rounded text-[8px]">✅ DOMINATA</span>');
+            
+            statusHtml = `
+              <div class="border-2 border-[#1A1A1A] p-2 rounded-lg bg-white shadow-sm flex flex-col gap-1">
+                <div class="flex justify-between items-center w-full">
+                  <span class="font-bold text-[#FF5A36] text-[9px] uppercase">${t.act} IN CORSO</span>
+                  ${statusBadge}
+                </div>
+                <div class="font-display font-bold text-sm leading-tight">${card.f}</div>
+                ${hSt==='new' ? `<button onclick="adminUnlock('${t.id}')" class="mt-1 bg-blue-100 text-blue-800 border border-blue-300 text-[9px] px-2 py-1 rounded w-full font-bold hover:bg-blue-200">🔓 FORZA SBLOCCO HINT AI TEAM</button>` : ''}
+              </div>`;
           }
           
-          let stor = `<div class="mt-2 text-[9px] font-mono text-gray-500">Storico Vuoto</div>`;
-          if(t.hist.length > 0) {
-            stor = `<div class="mt-2 text-[9px] font-mono text-gray-500">Inventory: ${t.hist.map(h => (h.st==='survived'?'✅':(h.st==='unlocked'?'🔓':'🔒')) + data.imp[h.id].f).join(', ')}</div>`;
-          }
+          const keys = ['sfida', 'imprevisto', 'limite'];
+          const buttonsHtml = keys.map(k => {
+            const isDone = t.hist.some(h=>h.id===k);
+            const label = k.charAt(0).toUpperCase() + k.slice(1);
+            if(isDone) return `<button disabled class="flex-1 bg-gray-100 text-gray-400 border border-gray-300 text-[9px] font-bold py-1.5 rounded cursor-not-allowed line-through">${label}</button>`;
+            return `<button onclick="adminAssign('${t.id}', '${k}')" class="flex-1 bg-[#1A1A1A] text-white border border-[#1A1A1A] text-[9px] font-bold py-1.5 rounded hover:bg-gray-800 retro-btn">${label}</button>`;
+          }).join('');
 
-          return `<div class="bg-white retro-border rounded-xl p-3 flex flex-col shadow-sm"><div class="border-b-2 border-[#1A1A1A] pb-2 flex justify-between items-center mb-2"><h3 class="font-display font-bold text-sm" style="color: ${data.c}">${data.ico.replace('sm:w-14 sm:h-14', '').replace('w-12 h-12', 'w-4 h-4 inline-block mr-1')} ${t.name}</h3><button onclick="adminDelTable('${t.id}')" class="text-red-500 hover:text-red-700 font-bold text-xs">✕</button></div><div class="text-xs bg-gray-50 p-2 rounded border border-gray-200 flex-1 flex flex-col justify-between"><div>${statusHtml}</div>${stor}</div><div class="flex gap-1 mt-2"><button onclick="adminShock('${t.id}')" class="flex-1 bg-[#FF5A36] text-white font-display text-[10px] font-bold py-2 rounded border border-[#1A1A1A] retro-btn hover:bg-[#e44e2c]">💥 SHOCK</button></div></div>`;
+          return `
+            <div class="bg-white retro-border rounded-xl p-3 flex flex-col shadow-sm h-full">
+              <div class="flex justify-between items-center mb-3 border-b-2 border-gray-200 pb-2">
+                <div class="flex items-center gap-2">
+                  <div class="w-6 h-6 rounded bg-[#FDFBF7] flex items-center justify-center border border-[#1A1A1A]">${data.ico.replace('sm:w-14 sm:h-14 w-12 h-12 mx-auto', 'w-4 h-4')}</div>
+                  <div>
+                    <h3 class="font-display font-bold text-xs" style="color: ${data.c}">${t.name}</h3>
+                    <div class="flex gap-1 mt-0.5">
+                      <a href="?#${t.id}" target="_blank" class="text-[8px] bg-gray-100 px-1 rounded hover:bg-gray-200">Apri Monitor ↗</a>
+                      <button onclick="showQR('?#${t.id}', '${t.name}')" class="text-[8px] bg-gray-100 px-1 rounded hover:bg-gray-200">QR 📱</button>
+                    </div>
+                  </div>
+                </div>
+                <button onclick="adminDelTable('${t.id}')" class="text-gray-400 hover:text-red-500 font-bold text-sm">✕</button>
+              </div>
+              
+              <div class="flex-1 flex flex-col gap-2">
+                ${statusHtml}
+              </div>
+              
+              <div class="mt-3 pt-2 border-t-2 border-dashed border-gray-200">
+                <span class="text-[8px] font-mono text-gray-500 mb-1 block uppercase">Invia Carta Specifica:</span>
+                <div class="flex gap-1 w-full">
+                  ${buttonsHtml}
+                </div>
+                <button onclick="adminAssignRandom('${t.id}')" class="w-full mt-1 bg-yellow-300 text-yellow-900 border border-[#1A1A1A] text-[9px] font-bold py-1.5 rounded hover:bg-yellow-400 retro-btn">🎲 Estrai Randomica</button>
+              </div>
+            </div>`;
         }).join('');
       }
 
       const b = document.getElementById('ad-btn-play');
       if(b) {
-        b.innerText = st.run ? "PAUSA" : "PLAY"; b.className = st.run ? "retro-btn bg-yellow-300 text-[10px] font-bold py-2 rounded-lg retro-border" : "retro-btn bg-green-300 text-[10px] font-bold py-2 rounded-lg retro-border";
+        b.innerHTML = st.run ? "⏸ PAUSA" : "▶ START TIMER"; 
+        b.className = st.run ? "retro-btn bg-yellow-300 text-[11px] font-bold py-2 rounded-lg retro-border" : "retro-btn bg-green-300 text-[11px] font-bold py-2 rounded-lg retro-border";
       }
     }
 
     function renderLog() {
       if(myView !== 'admin') return; const term = document.getElementById('ad-terminal');
-      if(term) { term.innerHTML = st.logs.map(l => `<div class="mb-1.5"><span class="text-green-500">➔</span> ${l}</div>`).join(''); term.scrollTop = term.scrollHeight; }
+      if(term) { term.innerHTML = st.logs.map(l => `<div class="mb-1"><span class="text-green-500">➔</span> ${l}</div>`).join(''); term.scrollTop = term.scrollHeight; }
     }
 
     function updateAdminTime() { const el = document.getElementById('ad-timer-txt'); if(el) el.innerText = `${Math.floor(st.tr/60).toString().padStart(2,'0')}:${(st.tr%60).toString().padStart(2,'0')}`; }
-    function adminToggleTimer() {
-      if(st.run) { clearInterval(timerInt); emitEvent('T_CTRL', { run: false, ph: st.ph, t: st.tr, log: 'Timer Pausa.' }); }
-      else { clearInterval(timerInt); timerInt = setInterval(() => { if(st.tr>0) emitEvent('TICK', { t: st.tr-1 }); else { clearInterval(timerInt); emitEvent('T_CTRL', { run:false, ph:st.ph, t:0, log:'Tempo Scaduto!' }); } }, 1000); emitEvent('T_CTRL', { run:true, ph:st.ph, t:st.tr, log:`Timer Avviato: ${fasi[st.ph].n}` }); }
-    }
-    function adminNavPhase(d) { const p = (st.ph + d + fasi.length) % fasi.length; clearInterval(timerInt); emitEvent('T_CTRL', { run:false, ph:p, t:fasi[p].t, log:`Fase: ${fasi[p].n}` }); }
-    function adminResetTimer() { clearInterval(timerInt); emitEvent('T_CTRL', { run:false, ph:st.ph, t:fasi[st.ph].t, log:'Timer resettato.' }); }
-    function adminResetSession() { if(confirm('Azzerare la sessione? Verranno cancellati carte attive, inventari, timer e log, mantenendo i tavoli creati.')) emitEvent('RESET_SESSION', {}); }
-    function adminToggleFeature(k, v) { emitEvent('CFG', { ac: v, log: `Sblocco team shock autonomo: ${v}`}); }
-    function adminAddTable() { const n = document.getElementById('new-t-name').value.trim() || `Tavolo ${st.tables.length + 1}`; const sc = document.getElementById('new-t-scen').value; const id = 't' + Date.now().toString().slice(-4); document.getElementById('new-t-name').value = ''; emitEvent('ADD_T', { id, n, sc }); }
-    function adminDelTable(id) { if(confirm('Eliminare tavolo?')) emitEvent('DEL_T', { id }); }
-    function adminUnlock(tid) { emitEvent('UNLOCK', { tid, log: `Regia ha SBLOCCATO hint per tavolo ${tid}`}); }
-    function adminReplySOS(tid, el) { emitEvent('SOS_REPLY', { tid, log: `Regia ha risposto alla richiesta SOS di ${tid}` }); el.remove(); }
     
-    function getAvailCards(tid) { const t = st.tables.find(x => x.id === tid); const total = db[t.sc].imp.length; return Array.from({length:total}, (_, i)=>i).filter(i => !t.hist.some(h=>h.id === i)); }
-    function adminShock(tid) {
-      const avail = getAvailCards(tid); const t = st.tables.find(x => x.id === tid);
-      if(avail.length === 0) return alert(`Il tavolo ${t.name} ha esaurito le carte!`);
-      const i = avail[Math.floor(Math.random() * avail.length)]; emitEvent('SHOCK', { tid, imp: i, flip: false, log: `💥 SHOCK Regia su [${t.name}] ➔ ${db[t.sc].imp[i].f}` });
+    function adminToggleTimer() {
+      if(st.run) { clearInterval(timerInt); emitEvent('T_CTRL', { run: false, ph: st.ph, t: st.tr, log: 'Timer in Pausa.' }); }
+      else { clearInterval(timerInt); timerInt = setInterval(() => { if(st.tr>0) emitEvent('TICK', { t: st.tr-1 }); else { clearInterval(timerInt); emitEvent('T_CTRL', { run:false, ph:st.ph, t:0, log:'Tempo Scaduto!' }); } }, 1000); emitEvent('T_CTRL', { run:true, ph:st.ph, t:st.tr, log:`Timer Avviato.` }); }
     }
+    function adminSetCustomTimer() {
+      const min = parseInt(document.getElementById('custom-min').value);
+      if(!isNaN(min) && min > 0) { clearInterval(timerInt); emitEvent('T_CTRL', { run: false, ph: st.ph, t: min * 60, log: `Timer impostato a ${min} minuti.` }); document.getElementById('custom-min').value = ''; }
+    }
+    function adminResetTimer() { clearInterval(timerInt); emitEvent('T_CTRL', { run:false, ph:st.ph, t:fasi[0].t, log:'Timer resettato a 10:00.' }); }
+    
+    function adminToggleFeature(k, v) { emitEvent('CFG', { ac: v, log: `Modalità Random libera ai Team: ${v ? 'ATTIVATA' : 'DISATTIVATA'}`}); }
+    function adminAddTable() { const n = document.getElementById('new-t-name').value.trim() || `Tavolo ${st.tables.length + 1}`; const sc = document.getElementById('new-t-scen').value; const id = 't' + Date.now().toString().slice(-4); document.getElementById('new-t-name').value = ''; emitEvent('ADD_T', { id, n, sc }); }
+    function adminDelTable(id) { if(confirm('Eliminare questo tavolo e tutti i suoi dati?')) emitEvent('DEL_T', { id }); }
+    
+    function adminAssign(tid, key) {
+      const t = st.tables.find(x => x.id === tid);
+      if(t.hist.some(h=>h.id === key)) return alert('Questa carta è già stata affrontata dal team.');
+      emitEvent('ASSIGN', { tid, k: key, flip: false, log: `Regia ha inviato [${key.toUpperCase()}] al ${t.name}` });
+    }
+    function adminAssignRandom(tid) {
+      const t = st.tables.find(x => x.id === tid);
+      const keys = ['sfida', 'imprevisto', 'limite'];
+      const avail = keys.filter(k => !t.hist.some(h=>h.id === k));
+      if(avail.length === 0) return alert('Carte esaurite per questo tavolo.');
+      const rKey = avail[Math.floor(Math.random() * avail.length)];
+      emitEvent('ASSIGN', { tid, k: rKey, flip: false, log: `Regia ha inviato Random [${rKey.toUpperCase()}] al ${t.name}` });
+    }
+    
+    function adminUnlock(tid) { emitEvent('UNLOCK', { tid, log: `Regia ha sbloccato la soluzione per il ${tid}`}); }
+    function adminReplySOS(tid, el) { emitEvent('SOS_REPLY', { tid, log: `Regia in arrivo al ${tid}` }); el.remove(); }
     function clearLogs() { emitEvent('CLR', {}); }
 
     // ================== TEAM (MOBILE FIRST) ==================
@@ -548,13 +509,17 @@
     function hideOnboarding() { document.getElementById('tm-onboarding').classList.add('opacity-0', 'pointer-events-none'); locUI.hasRevealed = true; renderTeam(); }
     function sendSOS() { emitEvent('SOS', { tid: myView }); }
 
-    function updateTeamDockVisibility() {
-      const dock = document.getElementById('tm-team-dock');
-      if(!dock) return;
-      const hasInventory = !!(getT() && getT().hist && getT().hist.length > 0);
-      const restoreVisible = !document.getElementById('tm-badge-restore')?.classList.contains('hidden');
-      const selfVisible = !document.getElementById('tm-btn-self')?.classList.contains('hidden');
-      dock.classList.toggle('is-empty', !(hasInventory || restoreVisible || selfVisible));
+    function getCardHtml(type, content, flipFuncStr, zoomFuncStr) {
+      return `
+        <div class="card-front bg-[#FDFBF7] retro-border p-6 flex flex-col riso-texture relative w-full h-full rounded-[24px]">
+          <button onclick="${zoomFuncStr}" class="card-zoom-btn">🔍 Zoom</button>
+          ${content.front}
+        </div>
+        <div class="card-back bg-[#FDFBF7] retro-border p-6 flex flex-col riso-texture relative w-full h-full rounded-[24px]">
+          <button onclick="${flipFuncStr}" class="card-zoom-btn">↩ Gira</button>
+          ${content.back}
+        </div>
+      `;
     }
 
     function renderTeam(isNewShock = false) {
@@ -563,7 +528,7 @@
 
       const t = getT(); 
       if(!t) { 
-        vTeam.innerHTML = `<div class="h-screen w-full flex flex-col items-center justify-center font-display text-xl text-center p-8"><div>🚨 ERRORE 404</div><div class="text-sm mt-4 text-gray-500">Tavolo non configurato o rimosso dalla regia. Ricarica la pagina.</div></div>`; 
+        vTeam.innerHTML = `<div class="h-screen w-full flex flex-col items-center justify-center font-display text-xl text-center p-8 bg-[#FDFBF7]"><div class="text-4xl mb-4">🚨</div><div>Tavolo inesistente.</div><div class="text-sm mt-4 text-gray-500">Chiedi al facilitatore di generare il tavolo e inquadra di nuovo il QR Code.</div></div>`; 
         return; 
       }
       
@@ -571,114 +536,152 @@
       if(locUI.hasRevealed && elOnb) elOnb.classList.add('hidden');
       
       const d = db[t.sc];
-      setText('tm-view-id', t.name.toUpperCase());
-      setText('tm-title', d.cx_f.t);
-      setText('tm-target', d.tgt);
+      document.getElementById('tm-view-id').innerText = t.name.toUpperCase(); 
+      document.getElementById('tm-title').innerText = d.cx_f.t;
 
-      const ctxF = document.getElementById('ctx-f');
-      if(ctxF && !ctxF.hasAttribute('data-rendered')) {
-        ctxF.innerHTML = `<div class="flex justify-between items-center w-full"><span class="font-display font-bold text-[10px] bg-[#1A1A1A] text-white px-2 py-0.5 rounded tracking-widest">${d.tg}</span></div><div class="flex-1 flex flex-col justify-center text-center">${d.ico}<h3 class="font-display text-xl sm:text-2xl font-bold mt-4 leading-tight">${d.cx_f.t}</h3><p class="text-xs sm:text-sm text-gray-500 font-medium mt-2 px-2 leading-relaxed">${d.cx_f.d}</p></div><div class="border-t-2 border-[#1A1A1A] pt-3 text-left"><p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Target</p><p class="text-xs sm:text-sm font-display font-bold">${d.tgt.split('- ')[1]}</p></div>`;
-        document.getElementById('ctx-b').innerHTML = `<div class="border-b-2 border-[#1A1A1A] pb-3 text-sm sm:text-base font-display font-bold">${d.t.toUpperCase()}</div><div class="flex-1 flex flex-col justify-center gap-4 text-xs sm:text-sm mt-4"><div><span class="font-bold text-gray-500 text-[10px] block uppercase tracking-wider mb-1">${d.cx_b.t1}</span><p class="leading-relaxed">${d.cx_b.d1}</p></div><div class="pt-4 border-t-2 border-dashed border-gray-300"><span class="font-bold text-[#FF5A36] text-[10px] block uppercase tracking-wider mb-1">${d.cx_b.t2}</span><p class="leading-relaxed font-bold">${d.cx_b.d2}</p></div></div>`;
-        ctxF.setAttribute('data-rendered', 'true');
-      }
+      // Render CARTA CONTESTO
+      const ctxFront = `
+        <div class="flex-1 flex flex-col justify-center text-center">
+          ${d.ico}
+          <h3 class="font-display text-2xl font-bold mt-4 leading-tight">${d.cx_f.t}</h3>
+          <p class="text-sm text-gray-500 font-medium mt-3 px-2 leading-relaxed">${d.cx_f.d}</p>
+        </div>
+        <div class="border-t-2 border-[#1A1A1A] pt-4 text-left mt-auto">
+          <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Target Assegnato</p>
+          <p class="text-sm font-display font-bold">${d.tgt}</p>
+        </div>
+        <button onclick="teamFlipCtx()" class="absolute bottom-4 right-4 bg-gray-200 text-[#1A1A1A] px-4 py-2 rounded-xl text-xs font-bold retro-btn border-2 border-[#1A1A1A]">↩ Dettagli</button>
+      `;
+      const ctxBack = `
+        <div class="border-b-2 border-[#1A1A1A] pb-3 text-base font-display font-bold uppercase tracking-widest">${d.t}</div>
+        <div class="flex-1 flex flex-col justify-center gap-5 text-sm mt-4">
+          <div><span class="font-bold text-gray-500 text-[10px] block uppercase tracking-wider mb-1">${d.cx_b.t1}</span><p class="leading-relaxed">${d.cx_b.d1}</p></div>
+          <div class="pt-5 border-t-2 border-dashed border-gray-300"><span class="font-bold text-[#FF5A36] text-[10px] block uppercase tracking-wider mb-1">${d.cx_b.t2}</span><p class="leading-relaxed font-bold">${d.cx_b.d2}</p></div>
+        </div>
+      `;
 
+      document.getElementById('tm-card-ctx').innerHTML = getCardHtml('ctx', {front: ctxFront, back: ctxBack}, "teamFlipCtx()", "teamZoom(true, 'ctx')");
+      
       updateTeamTime();
 
+      // INVENTARIO BOTTOM
       const invBox = document.getElementById('tm-inventory-box');
       if(t.hist.length > 0) {
-        invBox.classList.remove('hidden'); document.getElementById('tm-inv-count').innerText = `${t.hist.length}/${d.imp.length}`;
+        invBox.classList.remove('hidden'); document.getElementById('tm-inv-count').innerText = `${t.hist.length}/3`;
         document.getElementById('tm-inventory-list').innerHTML = t.hist.map(h => {
             const icon = h.st === 'new' ? '🔒' : (h.st === 'unlocked' ? '🔓' : '✅');
-            return `<button onclick="teamViewOld(${h.id})" class="flex-shrink-0 text-xs font-bold px-3 py-2 rounded-lg border-2 retro-btn transition-colors whitespace-nowrap snap-center ${t.act === h.id ? 'bg-[#1A1A1A] text-white border-[#1A1A1A]' : 'bg-gray-100 text-gray-700 border-gray-300'}">${icon} ${d.imp[h.id].f}</button>`
+            return `<button onclick="teamViewOld('${h.id}')" class="flex-shrink-0 text-xs font-bold px-3 py-2 rounded-lg border-2 retro-btn transition-colors whitespace-nowrap snap-center ${t.act === h.id ? 'bg-[#1A1A1A] text-white border-[#1A1A1A]' : 'bg-gray-100 text-[#1A1A1A] border-gray-300 hover:bg-gray-200'}">${icon} ${d.cards[h.id].f}</button>`
         }).join('');
       } else invBox.classList.add('hidden');
 
+      // GESTIONE BOTTONE RANDOM (Se permesso)
       document.getElementById('tm-btn-self').classList.toggle('hidden', !st.allowCrash);
-      const avail = getAvailCards(t.id);
-      if(avail.length===0 && st.allowCrash) { document.getElementById('tm-btn-self').innerText = "ESAURITE"; document.getElementById('tm-btn-self').disabled = true; document.getElementById('tm-btn-self').classList.add('opacity-50'); } 
-      else { document.getElementById('tm-btn-self').innerHTML = "🚨 Nuova Carta"; document.getElementById('tm-btn-self').disabled = false; document.getElementById('tm-btn-self').classList.remove('opacity-50'); }
 
-      const w = document.getElementById('tm-wrapper-imp'); const c = document.getElementById('tm-card-imp');
-      const ctxWrap = document.getElementById('tm-wrapper-ctx');
-      const stage = document.getElementById('team-stage');
-      if(ctxWrap) ctxWrap.classList.toggle('has-active', t.act !== null);
-      if(stage) stage.classList.toggle('has-active', t.act !== null);
+      // RENDER CARTA IMPREVISTO ATTIVA
+      const w = document.getElementById('tm-wrapper-imp'); 
       
       if (t.act !== null) {
         w.classList.remove('hidden');
-        setTimeout(() => { if(!locUI.hidden) { w.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-4'); } }, 10);
+        setTimeout(() => { w.classList.remove('opacity-0', 'translate-y-8'); }, 10);
 
-        const iData = d.imp[t.act]; const hSt = t.hist.find(x=>x.id===t.act).st;
-        const isBlur = hSt === 'new'; const isSurvived = hSt === 'survived';
+        const card = d.cards[t.act]; 
+        const hSt = t.hist.find(x=>x.id===t.act).st;
+        const isBlur = hSt === 'new'; 
+        const isSurvived = hSt === 'survived';
         
-        // -------------------------------------------------------------
-        // COSTRUZIONE RETRO CARTA 
-        // -------------------------------------------------------------
-        let backContent = `
-          <div><span class="text-gray-500 font-bold text-[10px] block uppercase tracking-wider mb-1">${iData.b1}</span><p class="text-xs sm:text-sm leading-relaxed">${iData.bd1}</p></div>
-          <div class="pt-3 border-t-2 border-dashed border-gray-300 relative flex-1 flex flex-col">
-            <span class="text-[#FF5A36] font-bold text-[10px] block uppercase tracking-wider mb-1">${iData.b2}</span>
-            <div class="${isBlur ? 'blur-content' : ''} flex-1"><p class="font-bold bg-yellow-50 p-3 border-2 border-yellow-200 rounded-lg text-[#1A1A1A] text-xs sm:text-sm leading-relaxed shadow-inner">${isBlur ? iData.bd2 : "💡 <i>Possibile evoluzione del Canvas</i><br>" + iData.hint + "<br><br><span class=\"font-mono text-[10px] text-gray-500\">🧩 Aggiornate: risposta bot · dati usati · limite · fallback · umano coinvolto.</span>"}</p></div>
-            ${isBlur ? `<div class="absolute inset-0 flex flex-col items-center justify-center bg-white/40 backdrop-blur-sm rounded-lg"><input type="text" id="pw-input-${t.act}" onclick="event.stopPropagation()" placeholder="Password" class="w-32 text-base text-center border-2 border-[#1A1A1A] p-2 rounded-lg mb-2 shadow-inner outline-none focus:border-[#FF5A36]"><button onclick="checkPw(${t.act}, event)" class="bg-[#1A1A1A] text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-gray-800 transition-transform active:scale-95 shadow-md">SBLOCCA 🔓</button></div>` : ''}
-            ${!isBlur && !isSurvived ? `<button onclick="teamSurvive(${t.act}, event)" class="w-full mt-auto bg-green-500 text-white font-display font-bold py-3 rounded-xl border-2 border-[#1A1A1A] retro-shadow-sm text-xs sm:text-sm active:translate-y-1 transition-transform">SFIDA DOMINATA ✅</button>` : ''}
-            ${isSurvived ? `<div class="w-full mt-auto bg-white text-green-600 border-2 border-green-500 font-display font-bold py-3 rounded-xl text-center text-xs sm:text-sm transform -rotate-2 shadow-sm">DOMINATO ✅</div>` : ''}
-          </div>
-        `;
+        // Avatar Generativo (DiceBear)
+        const avatarUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(card.f + t.act)}&backgroundColor=FDFBF7`;
 
-        // -------------------------------------------------------------
-        // COSTRUZIONE FRONTE CARTA (NUOVO LAYOUT CON AVATAR E DICEBEAR FALLBACK)
-        // -------------------------------------------------------------
-        const f = `
-          <div class="flex flex-col items-center justify-center text-center gap-2 w-full h-full pt-1">
-            <div class="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-full retro-border shadow-md overflow-hidden flex-shrink-0 flex items-center justify-center bg-[#FDFBF7]">
-              <img src="img/avatar_${t.sc}_${t.act + 1}.png" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(iData.f)}&backgroundColor=FDFBF7'" alt="Avatar" class="w-full h-full object-cover">
+        const impFront = `
+          <div class="flex flex-col items-center justify-center text-center w-full h-full pt-4">
+            <div class="w-20 h-20 bg-[#FDFBF7] rounded-full retro-border shadow-md overflow-hidden flex-shrink-0 flex items-center justify-center mb-4">
+              <img src="img/avatar_${t.sc}_${t.act}.png" onerror="this.src='${avatarUrl}'" class="w-full h-full object-cover">
             </div>
-            <h3 class="font-display text-lg sm:text-xl font-bold leading-tight uppercase tracking-widest text-[#FF5A36] px-1">${iData.f}</h3>
-            <div class="flex-1 w-full flex flex-col justify-center pb-1">
-              <div class="bg-[#FDFBF7] p-3 sm:p-4 rounded-xl border-2 border-[#1A1A1A] text-xs sm:text-sm font-semibold leading-relaxed shadow-inner riso-texture text-left relative w-full h-full flex items-center">
-                 <span class="absolute -top-3 left-3 bg-[#1A1A1A] text-white text-[9px] font-mono px-2 py-0.5 rounded tracking-widest retro-border">MESSAGGIO IN ENTRATA</span>
-                 <div class="w-full">${iData.d}</div>
+            <h3 class="font-display text-xl font-bold leading-tight uppercase tracking-widest text-[#FF5A36] px-2 mb-4">${card.f}</h3>
+            <div class="w-full flex-1 flex flex-col">
+              <div class="bg-white p-4 rounded-xl border-2 border-[#1A1A1A] text-sm font-semibold leading-relaxed shadow-inner text-left relative w-full flex-1">
+                 <span class="absolute -top-3 left-4 bg-[#1A1A1A] text-white text-[9px] font-mono px-2 py-0.5 rounded tracking-widest retro-border">MESSAGGIO RICEVUTO</span>
+                 <div class="mt-1">${card.d}</div>
               </div>
             </div>
+            <button onclick="teamFlipImp()" class="w-full mt-4 bg-[#FF5A36] text-white font-display font-bold px-4 py-3 rounded-xl retro-btn border-2 border-[#1A1A1A]">RISOLVI LA SFIDA ➔</button>
           </div>`;
 
-        const b = `<div class="border-b-2 border-gray-200 pb-2 flex justify-between"><span class="text-xs sm:text-sm font-display font-bold truncate pr-2">${iData.f.toUpperCase()}</span><span class="bg-[#FF5A36] text-white text-[9px] px-2 py-1 rounded retro-border">MISSIONE</span></div><div class="flex-1 flex flex-col pt-3 gap-3">${backContent}</div>`;
+        const impBack = `
+          <div class="border-b-2 border-gray-200 pb-3 flex justify-between items-center">
+            <span class="text-sm font-display font-bold uppercase truncate pr-2" style="color: ${d.c}">${card.b1}</span>
+          </div>
+          <div class="flex-1 flex flex-col pt-4 gap-4">
+            <div><p class="text-sm leading-relaxed">${card.bd1}</p></div>
+            <div class="pt-4 border-t-2 border-dashed border-gray-300 relative flex-1 flex flex-col">
+              <span class="text-[#FF5A36] font-bold text-[10px] block uppercase tracking-wider mb-2">${card.b2}</span>
+              <div class="${isBlur ? 'blur-content' : ''} flex-1"><p class="font-bold bg-yellow-50 p-4 border-2 border-yellow-300 rounded-xl text-[#1A1A1A] text-sm leading-relaxed shadow-sm">${isBlur ? card.bd2 : "💡 <i>Suggerimento per il Canvas</i><br><br>" + card.hint}</p></div>
+              
+              ${isBlur ? `
+              <div class="absolute inset-0 flex flex-col items-center justify-center bg-white/50 backdrop-blur-sm rounded-xl">
+                <input type="text" id="pw-input-${t.act}" placeholder="Password..." class="w-40 text-lg text-center border-4 border-[#1A1A1A] p-2 rounded-xl mb-3 outline-none focus:border-[#FF5A36] font-bold shadow-inner">
+                <button onclick="checkPw('${t.act}')" class="bg-[#1A1A1A] text-white text-xs font-bold px-6 py-3 rounded-xl retro-btn border-2 border-[#1A1A1A]">SBLOCCA HINT 🔓</button>
+              </div>` : ''}
+              
+              ${!isBlur && !isSurvived ? `<button onclick="teamSurvive('${t.act}')" class="w-full mt-auto bg-green-500 text-white font-display font-bold py-3 rounded-xl border-2 border-[#1A1A1A] retro-shadow-sm text-sm active:translate-y-1 transition-transform">DOMINATO SUL CANVAS ✅</button>` : ''}
+              ${isSurvived ? `<div class="w-full mt-auto bg-white text-green-600 border-2 border-green-500 font-display font-bold py-3 rounded-xl text-center text-sm transform -rotate-2 shadow-sm uppercase tracking-widest">SFIDA SUPERATA ✅</div>` : ''}
+            </div>
+          </div>`;
         
-        document.getElementById('imp-f').innerHTML = f; document.getElementById('imp-b').innerHTML = b;
-        if(locUI.zoomType === 'imp') { document.getElementById('mod-f').innerHTML = f; document.getElementById('mod-b').innerHTML = b; }
+        document.getElementById('tm-card-imp').innerHTML = getCardHtml('imp', {front: impFront, back: impBack}, "teamFlipImp()", "teamZoom(true, 'imp')");
         
-        if(isNewShock && !locUI.hidden && locUI.hasRevealed) { document.body.classList.add('alarm-active'); setTimeout(()=>document.body.classList.remove('alarm-active'), 800); playSound('alarm'); }
+        if(locUI.zoomType === 'imp') {
+           document.getElementById('mod-f-content').innerHTML = impFront;
+           document.getElementById('mod-b-content').innerHTML = impBack;
+        }
         
-        if (locUI.hidden) { w.classList.add('opacity-0', 'pointer-events-none', 'translate-y-4'); document.getElementById('tm-badge-restore').classList.remove('hidden'); }
-        else { document.getElementById('tm-badge-restore').classList.add('hidden'); }
-
-        c.classList.toggle('flipped', t.flip); 
+        if(isNewShock && locUI.hasRevealed) { 
+          document.body.classList.add('alarm-active'); 
+          setTimeout(()=>document.body.classList.remove('alarm-active'), 800); 
+          playSound('alarm'); 
+          // Auto scroll to card
+          setTimeout(() => { document.getElementById('team-stage').scrollTo({ top: document.getElementById('team-stage').scrollHeight, behavior: 'smooth' }); }, 100);
+        }
+        
+        document.getElementById('tm-card-imp').classList.toggle('flipped', t.flip); 
         if(locUI.zoomType === 'imp') document.getElementById('modal-inner').classList.toggle('flipped', t.flip);
 
       } else { 
-        w.classList.add('hidden', 'opacity-0', 'pointer-events-none', 'translate-y-4'); document.getElementById('tm-badge-restore').classList.add('hidden'); 
+        w.classList.add('hidden', 'opacity-0', 'translate-y-8'); 
       }
 
-      updateTeamDockVisibility();
-
       if(locUI.zoomType === 'ctx') {
-        document.getElementById('mod-f').innerHTML = document.getElementById('ctx-f').innerHTML;
-        document.getElementById('mod-b').innerHTML = document.getElementById('ctx-b').innerHTML;
+        document.getElementById('mod-f-content').innerHTML = ctxFront;
+        document.getElementById('mod-b-content').innerHTML = ctxBack;
         document.getElementById('modal-inner').classList.toggle('flipped', ctxFlip);
       }
     }
 
-    function updateTeamTime() { const box = document.getElementById('tm-timer'); if(st.run || st.tr < fasi[st.ph].t) { box.classList.remove('hidden'); box.innerText = `${Math.floor(st.tr/60).toString().padStart(2,'0')}:${(st.tr%60).toString().padStart(2,'0')}`; } else box.classList.add('hidden'); }
+    function updateTeamTime() { 
+      const box = document.getElementById('tm-timer'); 
+      if(st.run || st.tr < fasi[st.ph].t) { 
+        box.classList.remove('hidden'); 
+        box.innerText = `${Math.floor(st.tr/60).toString().padStart(2,'0')}:${(st.tr%60).toString().padStart(2,'0')}`; 
+      } else box.classList.add('hidden'); 
+    }
     
     let ctxFlip = false; 
     function teamFlipCtx() { ctxFlip = !ctxFlip; document.getElementById('tm-card-ctx').classList.toggle('flipped', ctxFlip); if(locUI.zoomType==='ctx') document.getElementById('modal-inner').classList.toggle('flipped', ctxFlip); }
     
-    function checkPw(imp, e) { e.stopPropagation(); const val = document.getElementById('pw-input-'+imp)?.value; if(val && val.toLowerCase() === 'urca-rischio') { emitEvent('UNLOCK', { tid: myView, log: `Il tavolo ha decifrato la password!` }); playSound('win'); } else alert("Password errata!"); }
-    function teamSurvive(imp, e) { e.stopPropagation(); playSound('win'); emitEvent('SURVIVE', { tid: myView, log: `✅ Sfida Dominata!` }); }
+    function checkPw(k) { const val = document.getElementById('pw-input-'+k)?.value; if(val && val.toLowerCase() === 'urca-rischio') { emitEvent('UNLOCK', { tid: myView, log: `Il tavolo ha decifrato la password!` }); playSound('win'); } else alert("Password errata!"); }
+    function teamSurvive(k) { playSound('win'); emitEvent('SURVIVE', { tid: myView, log: `✅ Sfida Dominata!` }); }
 
-    function teamSelfShock() { const t = getT(); const avail = getAvailCards(t.id); if(avail.length===0) return; const i = avail[Math.floor(Math.random()*avail.length)]; locUI.hidden=false; emitEvent('SHOCK', {tid: t.id, imp: i, flip: false, log: `Pescata autonoma ➔ ${db[t.sc].imp[i].f}`}); }
-    function teamViewOld(impIdx) { locUI.hidden = false; emitEvent('VIEW', {tid: myView, imp: impIdx}); }
-    function teamHide(val) { locUI.hidden = val; renderTeam(); }
+    function teamSelfShock() { 
+      const t = getT(); 
+      const keys = ['sfida', 'imprevisto', 'limite'];
+      const avail = keys.filter(k => !t.hist.some(h=>h.id === k));
+      if(avail.length===0) return; 
+      const rKey = avail[Math.floor(Math.random()*avail.length)]; 
+      emitEvent('SHOCK', {tid: t.id, imp: rKey, flip: false, log: `Pescata autonoma ➔ ${db[t.sc].cards[rKey].f}`}); 
+    }
+    
+    function teamViewOld(k) { emitEvent('VIEW', {tid: myView, imp: k}); }
+    
     function teamZoom(val, type = 'imp') { 
       const m = document.getElementById('modal-zoom'); 
       if(val) { 
