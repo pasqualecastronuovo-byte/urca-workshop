@@ -72,12 +72,13 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--pape
 .scroll-x::-webkit-scrollbar { display: none; }
 
 /* ── VIEWS ── */
-#view-admin, #view-team, #view-cert {
+#view-admin, #view-team, #view-cert, #view-fac {
   position: absolute; inset: 0; display: none;
 }
 #view-admin.show { display: flex; flex-direction: row; }
 #view-team.show  { display: flex; flex-direction: column; }
 #view-cert.show  { display: flex; flex-direction: column; background: var(--paper); }
+#view-fac.show   { display: flex; flex-direction: column; background: var(--ink); }
 
 /* ══════════════════════════════
    ADMIN LAYOUT
@@ -144,9 +145,8 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--pape
 ══════════════════════════════ */
 :root {
   --header-h: 64px;
-  --dock-h: 108px;        /* base dock height (no inventory) */
-  --dock-h-inv: 158px;    /* dock with inventory visible */
-  --card-gap: 20px;
+  --dock-h: 72px;
+  --card-gap: 16px;
   --card-avail: calc(100svh - var(--header-h) - var(--dock-h) - var(--card-gap) * 2);
 }
 .card-wrap {
@@ -154,36 +154,53 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--pape
   max-width: 420px;
   height: var(--card-avail);
   min-height: 460px;
-  max-height: 700px;
-  perspective: 1000px;
+  max-height: 720px;
+  /* perspective must be on the PARENT of card-inner for iOS */
+  perspective: 1200px;
+  -webkit-perspective: 1200px;
   flex-shrink: 0;
 }
-/* when inventory is showing, cards are a little shorter */
-.inv-visible .card-wrap { height: calc(100svh - var(--header-h) - var(--dock-h-inv) - var(--card-gap) * 2); }
+.inv-visible .card-wrap { height: calc(100svh - var(--header-h) - 112px - var(--card-gap) * 2); }
 
 .card-inner {
   width: 100%; height: 100%;
   position: relative;
+  /* iOS Safari requires -webkit- prefix */
+  -webkit-transform-style: preserve-3d;
   transform-style: preserve-3d;
   transition: transform .55s cubic-bezier(.4,0,.2,1);
+  /* Force GPU compositing layer on iOS */
+  will-change: transform;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 }
-.card-inner.flipped { transform: rotateY(180deg); }
+.card-inner.flipped {
+  -webkit-transform: rotateY(180deg);
+  transform: rotateY(180deg);
+}
 .card-face {
   position: absolute; inset: 0;
-  backface-visibility: hidden;
+  /* CRITICAL for iOS Safari: both prefixed and unprefixed */
   -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
   border: var(--border); border-radius: 20px;
   overflow: hidden;
   display: flex; flex-direction: column;
+  /* Force stacking context on iOS */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 }
-.card-face.back { transform: rotateY(180deg); }
+.card-face.back {
+  -webkit-transform: rotateY(180deg) translateZ(0);
+  transform: rotateY(180deg) translateZ(0);
+}
 
 /* Card colours */
 .card-face.paper { background-color: var(--paper); background-image: radial-gradient(rgba(15,15,15,.07) 1px, transparent 0); background-size: 5px 5px; }
 .card-face.white { background: white; }
 .card-face.ink   { background: var(--ink); color: white; }
 
-/* Flip button – floated top-right inside a face */
+/* Flip button – top-right pill */
 .flip-btn {
   position: absolute; top: 10px; right: 10px; z-index: 5;
   background: rgba(255,255,255,.92); border: 2px solid var(--ink);
@@ -192,9 +209,45 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--pape
   cursor: pointer; box-shadow: 2px 2px 0 var(--ink);
   display: flex; align-items: center; gap: 4px;
   transition: transform .08s, box-shadow .08s;
+  /* Ensure it's above other content */
+  -webkit-transform: translateZ(1px);
+  transform: translateZ(1px);
 }
-.flip-btn:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 var(--ink); }
+.flip-btn:active { transform: translate(1px,1px) translateZ(1px); box-shadow: 1px 1px 0 var(--ink); }
 .flip-btn.dark { background: var(--ink); color: white; }
+
+/* ── SOS floating widget ── */
+#sos-widget {
+  position: fixed; bottom: 24px; left: 16px; z-index: 50;
+  width: 52px; height: 52px; border-radius: 50%;
+  background: var(--yellow); border: var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; cursor: pointer;
+  box-shadow: 3px 3px 0 var(--ink);
+  transition: transform .1s, box-shadow .1s;
+}
+#sos-widget:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 var(--ink); }
+
+/* ── Team dock — minimal ── */
+#team-dock {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: white; border-top: var(--border);
+  padding: 10px 16px 10px 80px; /* left padding for SOS widget */
+  z-index: 30; display: flex; flex-direction: column; gap: 8px;
+}
+#team-dock-row { display: flex; gap: 8px; align-items: center; }
+
+/* Archive collapsible */
+#inv-box { border-top: 2px solid var(--cream); padding-top: 8px; display: none; }
+#inv-toggle {
+  display: none; /* shown when hist > 0 */
+  align-items: center; gap: 6px;
+  font-family: var(--font-m); font-size: 9px; color: #888;
+  text-transform: uppercase; letter-spacing: .06em;
+  cursor: pointer; background: none; border: none; padding: 0;
+}
+#inv-toggle .inv-arrow { transition: transform .2s; display: inline-block; }
+#inv-toggle.open .inv-arrow { transform: rotate(180deg); }
 
 /* ══════════════════════════════
    ONBOARDING LOCK — editorial / designer-grade
@@ -537,6 +590,176 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--pape
   font-family: 'Space Grotesk', sans-serif;
   overflow: hidden; flex-shrink: 0;
 }
+/* ══════════════════════════════
+   FACILITATORE MOBILE VIEW
+══════════════════════════════ */
+#fac-header {
+  background: var(--ink); border-bottom: 3px solid #222;
+  padding: 14px 16px; display: flex; align-items: center;
+  justify-content: space-between; flex-shrink: 0; z-index: 20;
+}
+#fac-timer-btn {
+  font-family: var(--font-m); font-weight: 700; font-size: 2rem;
+  color: var(--yellow); background: none; border: 2px solid #333;
+  border-radius: 12px; padding: 6px 16px; cursor: pointer;
+  transition: background .1s;
+}
+#fac-timer-btn:active { background: #222; }
+#fac-timer-btn.running { color: white; border-color: var(--green); }
+
+#fac-tables {
+  flex: 1; overflow-y: auto; padding: 12px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+#fac-tables::-webkit-scrollbar { display: none; }
+
+.fac-table-card {
+  background: #1a1a1a; border: 2px solid #2a2a2a; border-radius: 16px;
+  overflow: hidden;
+}
+.fac-table-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 14px 10px; cursor: pointer;
+}
+.fac-table-body { display: none; padding: 0 12px 12px; }
+.fac-table-body.open { display: block; }
+
+.fac-card-btn {
+  flex: 1; padding: 10px 8px; border-radius: 10px;
+  border: 2px solid #333; background: #222; color: #ccc;
+  font-family: var(--font-d); font-size: 11px; font-weight: 700;
+  cursor: pointer; text-align: center; transition: all .1s;
+}
+.fac-card-btn:active { background: #333; transform: scale(.97); }
+.fac-card-btn.done { opacity: .35; text-decoration: line-through; cursor: not-allowed; }
+.fac-card-btn.active-card { border-color: var(--orange); color: var(--orange); }
+
+#fac-sos-banner {
+  display: none; background: var(--yellow); border-top: 3px solid var(--ink);
+  padding: 12px 16px; flex-shrink: 0;
+}
+
+#fac-dock {
+  background: #111; border-top: 2px solid #222;
+  padding: 12px 16px; display: flex; gap: 8px; flex-shrink: 0;
+}
+/* ══════════════════════════════
+   RETROSPETTIVA MODAL
+══════════════════════════════ */
+#retro-modal {
+  position: fixed; inset: 0; z-index: 500;
+  background: #080808;
+  display: none; flex-direction: column;
+  opacity: 0; transition: opacity .3s;
+}
+#retro-modal.show   { display: flex; }
+#retro-modal.visible{ opacity: 1; }
+
+#retro-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 24px; flex-shrink: 0;
+  border-bottom: 1px solid #1a1a1a;
+}
+#retro-counter {
+  font-family: var(--font-m); font-size: 11px; color: #444;
+  letter-spacing: .1em;
+}
+#retro-close {
+  background: #1a1a1a; border: 1.5px solid #333; border-radius: 99px;
+  color: #666; font-family: var(--font-m); font-size: 10px;
+  padding: 5px 14px; cursor: pointer; transition: all .1s;
+}
+#retro-close:active { background: #222; color: white; }
+
+#retro-stage {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  padding: 24px; overflow: hidden; position: relative;
+}
+.retro-slide {
+  width: 100%; max-width: 800px;
+  opacity: 0; transform: translateX(40px);
+  transition: opacity .35s cubic-bezier(.4,0,.2,1), transform .35s cubic-bezier(.4,0,.2,1);
+  position: absolute;
+}
+.retro-slide.active {
+  opacity: 1; transform: translateX(0); position: relative;
+}
+.retro-slide.out-left {
+  opacity: 0; transform: translateX(-40px);
+}
+
+#retro-nav {
+  display: flex; align-items: center; justify-content: center;
+  gap: 16px; padding: 20px 24px; flex-shrink: 0;
+  border-top: 1px solid #1a1a1a;
+}
+.retro-nav-btn {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: #1a1a1a; border: 2px solid #2a2a2a;
+  color: #888; font-size: 20px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .1s;
+}
+.retro-nav-btn:active { background: #2a2a2a; color: white; transform: scale(.95); }
+.retro-nav-btn:disabled { opacity: .25; cursor: not-allowed; }
+.retro-nav-btn.primary {
+  width: 64px; height: 64px; font-size: 24px;
+  background: #1a1a1a; border-color: var(--retro-color, #FF4D1C);
+  color: var(--retro-color, #FF4D1C);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--retro-color, #FF4D1C) 20%, transparent);
+}
+
+/* Slide typography */
+.retro-eyebrow {
+  font-family: var(--font-m); font-size: 10px; color: var(--retro-color, #FF4D1C);
+  text-transform: uppercase; letter-spacing: .15em; margin-bottom: 12px;
+}
+.retro-headline {
+  font-family: var(--font-d); font-weight: 700; color: white;
+  font-size: clamp(1.8rem, 5vw, 3rem); line-height: 1.1;
+  letter-spacing: -.02em; margin-bottom: 16px;
+}
+.retro-body {
+  font-size: 15px; color: #777; line-height: 1.7;
+}
+.retro-divider {
+  height: 2px; background: var(--retro-color, #FF4D1C);
+  border-radius: 1px; margin: 20px 0; opacity: .3;
+}
+.retro-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(255,255,255,.04); border: 1.5px solid #2a2a2a;
+  border-radius: 8px; padding: 6px 14px;
+  font-family: var(--font-m); font-size: 10px; color: #555;
+  letter-spacing: .06em;
+}
+.retro-message-box {
+  background: #111; border: 1.5px solid #222; border-radius: 14px;
+  padding: 20px 22px; margin: 16px 0; position: relative;
+}
+.retro-message-box::before {
+  content: 'MESSAGGIO RICEVUTO';
+  position: absolute; top: -8px; left: 16px;
+  background: #080808; padding: 0 8px;
+  font-family: var(--font-m); font-size: 8px; color: #333; letter-spacing: .1em;
+}
+.retro-hint-box {
+  background: #111500; border: 1.5px solid #2a2600; border-radius: 14px;
+  padding: 16px 20px; margin-top: 12px;
+}
+.retro-cd-box {
+  background: #080f1e; border-left: 3px solid var(--retro-color, #FF4D1C);
+  border-radius: 0 10px 10px 0; padding: 14px 18px; margin-top: 12px;
+}
+/* Dot indicators */
+.retro-dots {
+  display: flex; gap: 6px; justify-content: center;
+}
+.retro-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #2a2a2a; transition: all .2s;
+}
+.retro-dot.active { background: var(--retro-color, #FF4D1C); width: 20px; border-radius: 3px; }
 </style>
 </head>
 <body class="riso">
@@ -602,6 +825,9 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--pape
     <!-- Sessione -->
     <div style="margin-top:auto;border-top:2px solid var(--cream);padding-top:12px;display:flex;flex-direction:column;gap:8px;">
       <span class="t-display t-bold t-upper" style="font-size:9px;color:#aaa;">⚙️ Gestione Sessione</span>
+      <button onclick="showFacQR()" class="btn btn-sm btn-full" style="background:#1a1a1a;color:var(--yellow);border-color:#333;">
+        📱 QR Facilitatore Mobile
+      </button>
       <button onclick="showCertQR()" class="btn btn-sm btn-full" style="background:#f0fdf4;border-color:#86efac;color:#166534;">
         🎓 QR Attestati
       </button>
@@ -682,18 +908,20 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--pape
     <div id="slot-imp" class="card-wrap" style="display:none;"></div>
   </main>
 
-  <!-- Dock -->
+  <!-- SOS floating widget -->
+  <button id="sos-widget" onclick="sendSOS()" title="Chiedi aiuto al facilitatore">🆘</button>
+
+  <!-- Dock — minimal -->
   <footer id="team-dock">
-    <div style="display:flex;gap:8px;">
-      <button onclick="sendSOS()" class="btn btn-yel" style="flex:1;position:relative;overflow:hidden;">
-        <span style="font-size:16px;">🆘</span> AIUTO
+    <div id="team-dock-row">
+      <button id="btn-self" onclick="teamSelfPick()" class="btn btn-org btn-sm" style="display:none;">
+        🎲 Pesca
       </button>
-      <button id="btn-self" onclick="teamSelfPick()" class="btn btn-org" style="flex:1;display:none;">
-        <span style="font-size:14px;">🎲</span> PESCA
+      <button id="inv-toggle" onclick="toggleInventory()">
+        🗂 Archivio <span id="inv-count">0/3</span> <span class="inv-arrow">▾</span>
       </button>
     </div>
-    <div id="inv-box" style="display:none;border-top:2px solid var(--cream);padding-top:8px;">
-      <div style="font-family:var(--font-m);font-size:9px;color:#888;margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;">🗂 Archivio <span id="inv-count">0/3</span></div>
+    <div id="inv-box">
       <div id="inv-list" class="inv-list"></div>
     </div>
   </footer>
@@ -769,22 +997,26 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--pape
       </div>
     </div>
 
-    <!-- STEP 3: preview + download (hidden initially) -->
-    <div id="cert-s3" style="width:100%;max-width:360px;display:none;flex-direction:column;gap:16px;align-items:center;">
+    <!-- STEP 3: preview + download -->
+    <div id="cert-s3" style="width:100%;max-width:360px;display:none;flex-direction:column;gap:14px;align-items:center;">
       <div style="text-align:center;">
-        <div style="font-family:var(--font-d);font-weight:700;font-size:1.1rem;margin-bottom:4px;">Il tuo attestato è pronto!</div>
-        <div style="font-family:var(--font-m);font-size:10px;color:#888;">Scaricalo e condividilo su LinkedIn 🎉</div>
+        <div style="font-family:var(--font-d);font-weight:700;font-size:1.1rem;margin-bottom:4px;">Il tuo attestato è pronto! 🎉</div>
+        <div style="font-family:var(--font-m);font-size:10px;color:#888;">Scaricalo e condividilo su LinkedIn</div>
       </div>
-      <!-- Scaled preview of the certificate -->
       <div class="cert-preview-wrap" id="cert-preview-container"></div>
-      <div style="display:flex;gap:8px;width:100%;">
-        <button onclick="certStep(2)" class="btn btn-sm" style="flex:1;">← Modifica</button>
-        <button onclick="certDownload()" class="btn btn-org" style="flex:2;font-size:14px;" id="cert-dl-btn">
+      <!-- Action buttons -->
+      <div style="display:flex;flex-direction:column;gap:8px;width:100%;">
+        <button onclick="certDownload()" class="btn btn-ink btn-full" style="font-size:14px;" id="cert-dl-btn">
           ⬇ Scarica PNG
         </button>
+        <button onclick="shareLinkedIn()" class="btn btn-full" style="font-size:13px;background:#0a66c2;color:white;border-color:#0a66c2;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="white" style="flex-shrink:0;"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+          Condividi su LinkedIn
+        </button>
+        <button onclick="certStep(2)" class="btn btn-sm btn-full" style="color:#888;">← Modifica nome</button>
       </div>
       <p style="font-family:var(--font-m);font-size:9px;color:#aaa;text-align:center;line-height:1.6;">
-        Formato 1080×1350px · Ottimizzato per LinkedIn e Instagram
+        1080×1350px · Ottimizzato per LinkedIn e Instagram
       </p>
     </div>
 
@@ -793,6 +1025,65 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--pape
 
 <!-- OFF-SCREEN CERTIFICATE TEMPLATE (rendered by html2canvas) -->
 <div id="cert-template"></div>
+
+<!-- ═══════════════════════════════════════════
+     FACILITATORE MOBILE VIEW  #fac
+═══════════════════════════════════════════ -->
+<div id="view-fac">
+
+  <!-- SOS banner (hidden until SOS arrives) -->
+  <div id="fac-sos-banner">
+    <div id="fac-sos-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+  </div>
+
+  <!-- Header: timer + status -->
+  <header id="fac-header">
+    <div>
+      <div style="font-family:var(--font-m);font-size:8px;color:#555;text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px;">URCA! Facilitatore</div>
+      <div style="font-family:var(--font-d);font-weight:700;font-size:13px;color:white;" id="fac-subtitle">Sessione in corso</div>
+    </div>
+    <button id="fac-timer-btn" onclick="facToggleTimer()">00:00</button>
+  </header>
+
+  <!-- Tables list -->
+  <main id="fac-tables"></main>
+
+  <!-- Bottom dock -->
+  <footer id="fac-dock">
+    <button onclick="facResetTimer()" class="btn btn-sm" style="background:#222;color:#888;border-color:#333;flex:1;">🔄 Reset</button>
+    <button onclick="facSetTimer()" class="btn btn-sm" style="background:#222;color:#888;border-color:#333;flex:1;" id="fac-set-btn">⏱ Set</button>
+    <a href="#admin" class="btn btn-sm" style="background:#222;color:#888;border-color:#333;flex:1;text-decoration:none;display:flex;align-items:center;justify-content:center;">🖥 Desktop</a>
+  </footer>
+
+</div><!-- /view-fac -->
+
+<!-- ═══════════════════════════════════════════
+     RETROSPETTIVA MODAL
+═══════════════════════════════════════════ -->
+<div id="retro-modal">
+  <header id="retro-header">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div style="width:8px;height:8px;border-radius:50%;background:var(--retro-color,#FF4D1C);box-shadow:0 0 8px var(--retro-color,#FF4D1C);"></div>
+      <span id="retro-table-label" style="font-family:var(--font-d);font-weight:700;font-size:13px;color:white;"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;">
+      <span id="retro-counter" class="retro-counter">1 / 1</span>
+      <button id="retro-close" onclick="retroClose()">✕ CHIUDI</button>
+    </div>
+  </header>
+
+  <main id="retro-stage">
+    <div id="retro-slide-wrap" style="width:100%;max-width:800px;"></div>
+  </main>
+
+  <footer id="retro-nav">
+    <div class="retro-dots" id="retro-dots"></div>
+    <div style="display:flex;gap:12px;align-items:center;margin-top:16px;">
+      <button class="retro-nav-btn" id="retro-prev" onclick="retroNav(-1)">←</button>
+      <button class="retro-nav-btn primary" id="retro-next" onclick="retroNav(1)">→</button>
+    </div>
+  </footer>
+</div>
 
 <!-- QR Modal -->
 <div id="qr-modal">
@@ -811,7 +1102,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--pape
 const DB = {
   burocrazia: {
     color: '#2C5D63', label: 'PA · Burocrazia Guide', target: 'B2E – OPERATORE SPORTELLO',
-    ctx_img: 'img/ctx_burocrazia.png',
+    ctx_img: 'img/ctx_burocrazia.jpg',
     icon: `<svg viewBox="0 0 64 64" width="52" height="52" fill="none" stroke="#2C5D63" stroke-width="2.5" stroke-linecap="round"><rect x="12" y="10" width="40" height="44" rx="3"/><line x1="12" y1="26" x2="52" y2="26"/><line x1="12" y1="40" x2="52" y2="40"/><rect x="20" y="16" width="8" height="3" fill="#2C5D63" stroke="none"/></svg>`,
     cx: {
       front_title: 'Burocrazia Survival Guide',
@@ -824,7 +1115,7 @@ const DB = {
     cards: {
       sfida: {
         label: 'Sfida', color: '#fef9c3', text_color: '#854d0e',
-        avatar: 'img/avatar_burocrazia_sfida.png',
+        avatar: 'img/avatar_burocrazia_sfida.jpg',
         title: 'Procedura di Subentro',
         tag: '⚠️ ALTO CARICO COGNITIVO',
         msg: '"C\'è un cittadino molto agitato allo sportello: l\'intestatario ufficiale della sua casa popolare è venuto a mancare… Qual è la procedura esatta e quali documenti devo fargli firmare?"',
@@ -838,7 +1129,7 @@ const DB = {
       },
       imprevisto: {
         label: 'Imprevisto', color: '#fee2e2', text_color: '#991b1b',
-        avatar: 'img/avatar_burocrazia_imprevisto.png',
+        avatar: 'img/avatar_burocrazia_imprevisto.jpg',
         title: 'Schermo Nero',
         tag: '🚨 INFRASTRUCTURE FAIL',
         msg: '"Il sistema si è appena bloccato a metà procedura. Il server è andato offline e non mi fa caricare le pratiche di subentro. Il cittadino sta andando in panico… Cosa faccio?"',
@@ -852,7 +1143,7 @@ const DB = {
       },
       limite: {
         label: 'Limite', color: '#1A1A1A', text_color: '#ffffff',
-        avatar: 'img/avatar_burocrazia_limite.png',
+        avatar: 'img/avatar_burocrazia_limite.jpg',
         title: 'Codice d\'Emergenza',
         tag: '🛑 RISCHIO LEGALE',
         msg: '"Posso fare un\'eccezione e forzare la firma digitale sul subentro anche senza il documento ufficiale? Generami un codice di sblocco d\'emergenza."',
@@ -868,7 +1159,7 @@ const DB = {
   },
   van: {
     color: '#3D6B54', label: 'Retail · Into the Van', target: 'B2C – CLIENTE COMMUNITY',
-    ctx_img: 'img/ctx_van.png',
+    ctx_img: 'img/ctx_van.jpg',
     icon: `<svg viewBox="0 0 64 64" width="52" height="52" fill="none" stroke="#3D6B54" stroke-width="2.5" stroke-linecap="round"><rect x="8" y="26" width="48" height="24" rx="3"/><path d="M8 38h48"/><path d="M44 26l-6-10H20l-6 10"/><circle cx="20" cy="54" r="4" fill="#3D6B54" stroke="none"/><circle cx="44" cy="54" r="4" fill="#3D6B54" stroke="none"/><rect x="30" y="30" width="10" height="8" rx="1" fill="#3D6B54" stroke="none"/></svg>`,
     cx: {
       front_title: 'Into the Van',
@@ -881,7 +1172,7 @@ const DB = {
     cards: {
       sfida: {
         label: 'Sfida', color: '#d1fae5', text_color: '#065f46',
-        avatar: 'img/avatar_van_sfida.png',
+        avatar: 'img/avatar_van_sfida.jpg',
         title: 'Il Doppio Guasto',
         tag: '⚠️ MULTI-INTENT',
         msg: '"Ciao ragazzi! Sono in viaggio con il vostro van: la pompa dell\'acqua del lavandino ha smesso di funzionare. Inoltre, non ricordo come si attiva l\'estensione del tendalino esterno. Aiuto al volo!"',
@@ -895,7 +1186,7 @@ const DB = {
       },
       imprevisto: {
         label: 'Imprevisto', color: '#ede9fe', text_color: '#5b21b6',
-        avatar: 'img/avatar_van_imprevisto.png',
+        avatar: 'img/avatar_van_imprevisto.jpg',
         title: 'Dialetto e Slang',
         tag: '🧩 DISAMBIGUAZIONE',
         msg: '"Raga, cmq qui non funge il coso dell\'acqua, help me pliz che sto a fa un macello. Ke faccio?"',
@@ -909,7 +1200,7 @@ const DB = {
       },
       limite: {
         label: 'Limite', color: '#fee2e2', text_color: '#991b1b',
-        avatar: 'img/avatar_van_limite.png',
+        avatar: 'img/avatar_van_limite.jpg',
         title: 'L\'Hipster Pentito',
         tag: '🚨 RISCHIO CHURN',
         msg: '"Voglio cancellare tutto e tornare a casa. C\'è fango ovunque, e non so guidare il van che mi avete dato. Pretendo il rimborso dell\'intero viaggio!"',
@@ -925,7 +1216,7 @@ const DB = {
   },
   salute: {
     color: '#A0522D', label: 'Health · Handle with Care', target: 'B2C – PAZIENTE / ISCRITTO',
-    ctx_img: 'img/ctx_salute.png',
+    ctx_img: 'img/ctx_salute.jpg',
     icon: `<svg viewBox="0 0 64 64" width="52" height="52" fill="none" stroke="#A0522D" stroke-width="2.5" stroke-linecap="round"><path d="M8 24c5-18 24-18 24-6 0-12 19-12 24 6-4 20-24 32-24 32S12 44 8 24z"/></svg>`,
     cx: {
       front_title: 'Handle with Care',
@@ -938,7 +1229,7 @@ const DB = {
     cards: {
       sfida: {
         label: 'Sfida', color: '#dbeafe', text_color: '#1e40af',
-        avatar: 'img/avatar_salute_sfida.png',
+        avatar: 'img/avatar_salute_sfida.jpg',
         title: 'La Scelta Difficile',
         tag: '🧭 CHOICE OVERLOAD',
         msg: '"Buongiorno, sto attraversando un periodo di forte stress lavorativo e ho il sonno totalmente interrotto da giorni. Vorrei capire come scegliere lo psicologo più adatto a me…"',
@@ -952,7 +1243,7 @@ const DB = {
       },
       imprevisto: {
         label: 'Imprevisto', color: '#fee2e2', text_color: '#991b1b',
-        avatar: 'img/avatar_salute_imprevisto.png',
+        avatar: 'img/avatar_salute_imprevisto.jpg',
         title: 'Il Dottore Sconosciuto',
         tag: '🚨 ROTTURA FIDUCIA',
         msg: '"Mi sono appena collegato per la mia seduta, ma il link mi ha mandato nella stanza virtuale di un dottore che non ho mai visto! Non voglio ricominciare da capo… Dov\'è la mia psicologa?!"',
@@ -966,7 +1257,7 @@ const DB = {
       },
       limite: {
         label: 'Limite', color: '#1A1A1A', text_color: '#ffffff',
-        avatar: 'img/avatar_salute_limite.png',
+        avatar: 'img/avatar_salute_limite.jpg',
         title: 'Scorciatoia Fai-Da-Te',
         tag: '🛑 RISCHIO MEDICO',
         msg: '"Ho visto che il primo appuntamento è tra tre giorni, ma io devo dormire stanotte o domani crollo in ufficio. Dimmi quale ansiolitico o sonnifero posso comprare senza ricetta."',
@@ -1138,6 +1429,9 @@ function apply(e){
         const tbl=G.tables.find(x=>x.id===p.tid);
         sound('sos');
         spawnSOSToast(p.tid, tbl?tbl.name:'Tavolo');
+      } else if(UI.view==='fac'){
+        sound('sos');
+        facSpawnSOS(p.tid);
       }
       break;
 
@@ -1166,52 +1460,65 @@ function apply(e){
   }
   // Always persist locally
   ss(STORAGE_KEY, JSON.stringify(G));
-  // Admin persists to Supabase DB so any device can load state independently
-  if(UI.view==='admin') saveStateToDB();
+  // Admin and Fac persist to Supabase DB
+  if(UI.view==='admin' || UI.view==='fac') saveStateToDB();
 }
 
 /* ══ SUPABASE DB PERSISTENCE ══ */
+/* ══ SUPABASE DB PERSISTENCE — REST API diretta (no SDK) ══ */
 async function saveStateToDB(){
-  if(!sbClient) { console.warn('saveStateToDB: sbClient null, skipping'); return; }
   try{
-    const { error } = await sbClient.from('workshop_state').upsert({
-      id: 'main',
-      state: G,
-      updated_at: new Date().toISOString()
+    const res = await fetch(`${SB_URL_DEF}/rest/v1/workshop_state?id=eq.main`, {
+      method: 'PATCH',
+      headers: {
+        'apikey': SB_KEY_DEF,
+        'Authorization': `Bearer ${SB_KEY_DEF}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({ state: G, updated_at: new Date().toISOString() })
     });
-    if(error){
-      console.error('saveStateToDB error:', error);
-      if(UI.view==='admin') pushLog('⚠️ Errore salvataggio DB: '+error.message);
-      renderLog();
+    if(!res.ok){
+      // Row might not exist yet — try upsert
+      await fetch(`${SB_URL_DEF}/rest/v1/workshop_state`, {
+        method: 'POST',
+        headers: {
+          'apikey': SB_KEY_DEF,
+          'Authorization': `Bearer ${SB_KEY_DEF}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'resolution=merge-duplicates,return=minimal'
+        },
+        body: JSON.stringify({ id:'main', state: G, updated_at: new Date().toISOString() })
+      });
     }
   } catch(e){
-    console.error('saveStateToDB exception:', e);
+    console.error('saveStateToDB error:', e);
+    if(UI.view==='admin'){ pushLog('⚠️ Errore salvataggio DB: '+e.message); renderLog(); }
   }
 }
 
 async function loadStateFromDB(){
-  if(!sbClient){
-    // sbClient not ready yet — wait up to 3s for it
-    for(let i=0; i<6; i++){
-      await new Promise(r=>setTimeout(r,500));
-      if(sbClient) break;
-    }
-    if(!sbClient){ console.warn('loadStateFromDB: sbClient still null after wait'); return false; }
-  }
   try{
-    const { data, error } = await sbClient
-      .from('workshop_state')
-      .select('state')
-      .eq('id','main')
-      .single();
-    if(error){ console.error('loadStateFromDB error:', error.message); return false; }
-    if(data && data.state && Array.isArray(data.state.tables)){
-      G = data.state;
+    const res = await fetch(
+      `${SB_URL_DEF}/rest/v1/workshop_state?id=eq.main&select=state`,
+      {
+        headers: {
+          'apikey': SB_KEY_DEF,
+          'Authorization': `Bearer ${SB_KEY_DEF}`,
+          'Accept': 'application/json'
+        }
+      }
+    );
+    if(!res.ok){ console.error('loadStateFromDB HTTP error:', res.status, res.statusText); return false; }
+    const data = await res.json();
+    console.log('loadStateFromDB response:', data);
+    if(data && data[0] && data[0].state && Array.isArray(data[0].state.tables)){
+      G = data[0].state;
       ss(STORAGE_KEY, JSON.stringify(G));
       console.log('loadStateFromDB: loaded', G.tables.length, 'tables');
       return true;
     }
-    console.log('loadStateFromDB: no tables in DB yet');
+    console.log('loadStateFromDB: empty or no tables');
     return false;
   } catch(e){
     console.error('loadStateFromDB exception:', e);
@@ -1244,25 +1551,29 @@ function route(){
   const vA=document.getElementById('view-admin');
   const vT=document.getElementById('view-team');
   const vC=document.getElementById('view-cert');
-  [vA,vT,vC].forEach(v=>{ if(v) v.classList.remove('show'); });
+  const vF=document.getElementById('view-fac');
+  [vA,vT,vC,vF].forEach(v=>{ if(v) v.classList.remove('show'); });
 
   if(hash==='admin'){
     vA.classList.add('show');
     renderAdmin();
   } else if(hash==='cert'){
     vC.classList.add('show');
-    // Load from DB first, then render
-    loadStateFromDB().then(loaded=>{
-      if(loaded) renderCert();
-      else renderCert(); // renders with localStorage fallback
-    });
+    loadStateFromDB().then(()=>renderCert()).catch(()=>renderCert());
+  } else if(hash==='fac'){
+    vF.classList.add('show');
+    loadStateFromDB().then(()=>renderFac()).catch(()=>renderFac());
+    connectCloud(SB_URL_DEF, SB_KEY_DEF); // ensure realtime updates
   } else {
-    // Team view: load from DB directly — no dependency on admin being online
     vT.classList.add('show');
-    loadStateFromDB().then(loaded=>{
+    const onb=document.getElementById('onboarding');
+    if(onb) onb.style.pointerEvents='none';
+    loadStateFromDB().then(()=>{
       renderTeam();
+      if(onb) onb.style.pointerEvents='';
     }).catch(()=>{
-      renderTeam(); // fallback to localStorage
+      renderTeam();
+      if(onb) onb.style.pointerEvents='';
     });
   }
 }
@@ -1310,6 +1621,7 @@ function connectCloud(u,k){
 function renderAll(isNewCard=false){
   if(UI.view==='admin') renderAdmin();
   else if(UI.view==='cert') certRenderTableList();
+  else if(UI.view==='fac') renderFac();
   else renderTeam(isNewCard);
 }
 
@@ -1393,9 +1705,10 @@ function renderMonitors(){
       <div class="monitor-header">
         <div>
           <div class="t-display t-bold" style="font-size:13px;color:${d.color};">${esc(t.name)}</div>
-          <div style="display:flex;gap:4px;margin-top:4px;">
+          <div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;">
             <a href="${base}" target="_blank" class="btn btn-xs">Apri ↗</a>
             <button onclick="showQR('${base}','${esc(t.name)}')" class="btn btn-xs">QR 📱</button>
+            <button onclick="retroOpen('${t.id}')" class="btn btn-xs" style="background:#1a1a1a;color:white;border-color:#333;">▶ Retrospettiva</button>
           </div>
         </div>
         <button onclick="adminDelTable('${t.id}')" style="background:none;border:none;cursor:pointer;font-size:18px;color:#ccc;line-height:1;padding:0 4px;" title="Elimina tavolo">✕</button>
@@ -1656,7 +1969,7 @@ function buildImpCard(t,d){
   /* ── FRONT ── */
   const front=`
     <div class="card-face paper" style="display:flex;flex-direction:column;">
-      <button class="flip-btn dark" onclick="doFlipImp()">Analisi ↩</button>
+      <button class="flip-btn dark" onclick="doFlipImp()">Info ↩</button>
 
       <!-- Color header: avatar (circle on dark bg) + title + tag -->
       <div style="height:38%;background:${d.color};display:flex;align-items:flex-end;gap:12px;padding:12px 14px;flex-shrink:0;position:relative;overflow:hidden;">
@@ -1674,12 +1987,11 @@ function buildImpCard(t,d){
       </div>
 
       <!-- Message -->
-      <div style="flex:1;padding:12px 14px;display:flex;flex-direction:column;gap:10px;min-height:0;">
+      <div style="flex:1;padding:12px 14px;display:flex;flex-direction:column;gap:0;min-height:0;">
         <div style="background:white;border:2px solid var(--ink);border-radius:12px;padding:12px 12px 10px;position:relative;flex:1;display:flex;flex-direction:column;">
           <span style="position:absolute;top:-9px;left:10px;background:var(--ink);color:white;font-family:var(--font-m);font-size:7px;padding:2px 8px;border-radius:4px;letter-spacing:.06em;">MESSAGGIO</span>
-          <p style="font-size:12px;font-weight:600;line-height:1.65;color:#333;margin-top:4px;flex:1;overflow:hidden;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;">${esc(card.msg)}</p>
+          <p style="font-size:12.5px;font-weight:600;line-height:1.7;color:#222;margin-top:4px;flex:1;overflow:hidden;display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;">${esc(card.msg)}</p>
         </div>
-        <button onclick="doFlipImp()" class="btn btn-org btn-full" style="font-size:13px;flex-shrink:0;">RISOLVI LA SFIDA ➔</button>
       </div>
     </div>`;
 
@@ -1748,14 +2060,26 @@ function buildImpCard(t,d){
   slot.innerHTML=`<div class="card-inner ${t.impFlip?'flipped':''}" id="imp-inner" data-sc="${t.sc}" data-act="${t.act}">${front}${back}</div>`;
 }
 
+function toggleInventory(){
+  const box=document.getElementById('inv-box');
+  const tog=document.getElementById('inv-toggle');
+  const open=box.style.display==='block';
+  box.style.display=open?'none':'block';
+  tog.classList.toggle('open',!open);
+}
+
 function renderInventory(t,d){
   const box=document.getElementById('inv-box');
-  const list=document.getElementById('inv-list');
+  const tog=document.getElementById('inv-toggle');
   const cnt=document.getElementById('inv-count');
-  if(!t.hist.length){ box.style.display='none'; return; }
-  box.style.display='';
-  cnt.textContent=`${t.hist.length}/3`;
-  list.innerHTML=t.hist.map(h=>{
+  if(!t.hist.length){
+    if(tog) tog.style.display='none';
+    if(box) box.style.display='none';
+    return;
+  }
+  if(tog){ tog.style.display='flex'; }
+  if(cnt) cnt.textContent=`${t.hist.length}/3`;
+  document.getElementById('inv-list').innerHTML=t.hist.map(h=>{
     const icon=h.st==='new'?'🔒':h.st==='unlocked'?'🔓':'✅';
     const active=t.act===h.id;
     return `<button onclick="teamViewCard('${h.id}')" class="inv-chip ${active?'active':''}">${icon} ${esc(d.cards[h.id].title)}</button>`;
@@ -2011,8 +2335,7 @@ function certUpdatePreview(){
 
 function certBuildPreview(){
   const t=G.tables.find(x=>x.id===certState.tableId); if(!t) return;
-  const html=buildCertHTML(t, certState.name, certState.surname, false);
-  // Scaled preview (540px wide cert → fits in 360px container = scale 0.667)
+  const html=buildCertHTML(t, certState.name, certState.surname);
   const wrap=document.getElementById('cert-preview-container');
   wrap.innerHTML=`<div style="width:100%;aspect-ratio:4/5;overflow:hidden;position:relative;">
     <div style="width:540px;height:675px;transform:scale(0.667);transform-origin:top left;pointer-events:none;">
@@ -2021,120 +2344,110 @@ function certBuildPreview(){
   </div>`;
 }
 
-function buildCertHTML(t, name, surname, forCanvas=false){
+function buildCertHTML(t, name, surname){
   const d=DB[t.sc];
-  const survived=t.hist.filter(h=>h.st==='survived');
-  const unlocked=t.hist.filter(h=>h.st==='unlocked'||h.st==='survived');
   const today=new Date().toLocaleDateString('it-IT',{day:'2-digit',month:'long',year:'numeric'});
   const certId='URCA-'+Date.now().toString(36).toUpperCase().slice(-6);
-
-  // Challenges list HTML
-  const challengesHTML=t.hist.map(h=>{
-    const card=d.cards[h.id];
-    const done=h.st==='survived';
-    const hint=h.st!=='new';
-    return `<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.07);">
-      <div style="width:20px;height:20px;border-radius:50%;background:${done?'#22c55e':hint?'#3b82f6':'rgba(255,255,255,.15)'};display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;margin-top:1px;">${done?'✓':hint?'◑':'○'}</div>
-      <div style="flex:1;min-width:0;">
-        <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:11px;color:white;line-height:1.2;">${esc(card.title)}</div>
-        ${hint?`<div style="font-family:'DM Mono',monospace;font-size:9px;color:${d.color};margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(card.cd_label)}</div>`:''}
-      </div>
-    </div>`;
-  }).join('');
-
-  // CD principles learned (only unlocked/survived)
-  const cdHTML=unlocked.length ? unlocked.map(h=>{
-    const card=d.cards[h.id];
-    return `<div style="background:rgba(255,255,255,.04);border-left:3px solid ${d.color};border-radius:0 8px 8px 0;padding:8px 10px;margin-bottom:6px;">
-      <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:10px;color:white;margin-bottom:2px;">${esc(card.cd_label)}</div>
-      <div style="font-family:'DM Mono',monospace;font-size:8.5px;color:rgba(255,255,255,.45);line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${esc(card.cd_desc)}</div>
-    </div>`;
-  }).join('') : `<div style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,.3);font-style:italic;">Nessun principio sbloccato in questa sessione.</div>`;
-
   const fullName=(name+' '+surname).trim()||'Partecipante';
 
+  // Challenge rows with avatar
+  const challengesHTML = t.hist.map(h=>{
+    const card=d.cards[h.id];
+    const done=h.st==='survived';
+    const hint=h.st==='unlocked';
+    const statusColor=done?'#16a34a':hint?'#2563eb':'#9ca3af';
+    const statusLabel=done?'Superata ✓':hint?'Analizzata ◑':'Affrontata ○';
+    const avatarFallback=`https://api.dicebear.com/7.x/personas/svg?seed=${encodeURIComponent(card.title)}&backgroundColor=f8f5ee`;
+    return `
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(15,15,15,.08);">
+        <div style="width:40px;height:40px;border-radius:50%;border:2px solid ${d.color}44;overflow:hidden;background:#0d0d0d;flex-shrink:0;">
+          <img src="${card.avatar}" onerror="this.src='${avatarFallback}'" style="width:100%;height:100%;object-fit:cover;">
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:12px;color:#0f0f0f;line-height:1.2;">${esc(card.title)}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:#888;margin-top:2px;">${esc(card.tag)}</div>
+        </div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:${statusColor};font-weight:600;white-space:nowrap;">${statusLabel}</div>
+      </div>`;
+  }).join('');
+
+  const emptyChallenges = !t.hist.length
+    ? `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#aaa;font-style:italic;padding:12px 0;">Nessuna sfida affrontata in questa sessione.</div>`
+    : '';
+
   return `
-  <div style="width:540px;height:675px;background:#0A0A0A;position:relative;overflow:hidden;font-family:'Space Grotesk',sans-serif;">
+  <div style="width:540px;height:675px;background:#F8F5EE;position:relative;overflow:hidden;font-family:'Space Grotesk',sans-serif;">
 
-    <!-- Riso noise texture overlay -->
-    <div style="position:absolute;inset:0;opacity:.035;background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><filter id=%22n%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%224%22 stitchTiles=%22stitch%22/></filter><rect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23n)%22/></svg>');background-size:200px 200px;"></div>
+    <!-- Riso texture -->
+    <div style="position:absolute;inset:0;background-image:radial-gradient(rgba(15,15,15,.06) 1px,transparent 0);background-size:5px 5px;pointer-events:none;"></div>
 
-    <!-- Scenario color accent bar top -->
-    <div style="position:absolute;top:0;left:0;right:0;height:4px;background:${d.color};"></div>
+    <!-- Scenario color top bar -->
+    <div style="position:absolute;top:0;left:0;right:0;height:5px;background:${d.color};"></div>
 
-    <!-- Grid marks decorative -->
-    <div style="position:absolute;top:20px;left:24px;font-family:'DM Mono',monospace;font-size:8px;color:rgba(255,255,255,.1);letter-spacing:.08em;">X:024 Y:020</div>
-    <div style="position:absolute;bottom:20px;right:24px;font-family:'DM Mono',monospace;font-size:8px;color:rgba(255,255,255,.1);letter-spacing:.08em;">${certId}</div>
+    <!-- Grid marks -->
+    <div style="position:absolute;bottom:18px;right:20px;font-family:'DM Mono',monospace;font-size:7px;color:rgba(15,15,15,.2);letter-spacing:.06em;">${certId}</div>
 
-    <!-- LOGOS ROW -->
-    <div style="position:absolute;top:32px;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:0 28px;">
-      <!-- BSD Design logo -->
-      <div style="height:28px;display:flex;align-items:center;">
-        <img src="img/logo_bsd.png" style="height:28px;width:auto;object-fit:contain;"
-          onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-        <div style="display:none;align-items:center;gap:5px;">
-          <div style="width:6px;height:6px;border-radius:50%;background:${d.color};"></div>
-          <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:11px;color:rgba(255,255,255,.7);">BSD Design</span>
+    <!-- CONTENT -->
+    <div style="position:absolute;inset:0;display:flex;flex-direction:column;padding:24px 28px 20px;">
+
+      <!-- LOGOS ROW -->
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-shrink:0;margin-bottom:18px;">
+        <div style="height:26px;display:flex;align-items:center;">
+          <img src="img/logo_bsd.png" style="height:26px;width:auto;object-fit:contain;filter:none;"
+            onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+          <div style="display:none;align-items:center;gap:5px;">
+            <div style="width:5px;height:5px;border-radius:50%;background:${d.color};"></div>
+            <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:11px;color:#0f0f0f;">BSD Design</span>
+          </div>
+        </div>
+        <div style="height:26px;display:flex;align-items:center;">
+          <img src="img/logo_urca.png" style="height:26px;width:auto;object-fit:contain;"
+            onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+          <div style="display:none;align-items:center;">
+            <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;color:${d.color};">URCA!</span>
+          </div>
         </div>
       </div>
-      <!-- URCA! logo -->
-      <div style="height:28px;display:flex;align-items:center;">
-        <img src="img/logo_urca.png" style="height:28px;width:auto;object-fit:contain;"
-          onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-        <div style="display:none;align-items:center;gap:5px;">
-          <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;color:${d.color};">URCA!</span>
-        </div>
-      </div>
-    </div>
 
-    <!-- MAIN CONTENT -->
-    <div style="position:absolute;top:80px;left:0;right:0;bottom:60px;display:flex;flex-direction:column;padding:0 28px;">
+      <!-- DIVIDER -->
+      <div style="height:2px;background:${d.color};border-radius:1px;flex-shrink:0;margin-bottom:18px;"></div>
 
-      <!-- Label -->
-      <div style="font-family:'DM Mono',monospace;font-size:9px;color:${d.color};text-transform:uppercase;letter-spacing:.15em;margin-bottom:6px;">Attestato di Partecipazione</div>
+      <!-- LABEL -->
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:${d.color};text-transform:uppercase;letter-spacing:.15em;margin-bottom:6px;flex-shrink:0;">Attestato di Partecipazione</div>
 
-      <!-- Name -->
-      <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(1.6rem,5vw,2.2rem);color:white;line-height:1.05;letter-spacing:-.02em;margin-bottom:4px;">${esc(fullName)}</div>
+      <!-- NAME — large -->
+      <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:2rem;color:#0f0f0f;line-height:1.05;letter-spacing:-.02em;margin-bottom:4px;flex-shrink:0;">${esc(fullName)}</div>
 
       <!-- Subtitle -->
-      <div style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.45);margin-bottom:16px;">ha partecipato al workshop · ${today}</div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:#666;margin-bottom:14px;flex-shrink:0;">
+        ha partecipato al workshop Conversational AI Design Sprint · ${today}
+      </div>
 
       <!-- Scenario badge -->
-      <div style="display:inline-flex;align-items:center;gap:8px;background:${d.color}22;border:1.5px solid ${d.color}44;border-radius:8px;padding:6px 12px;margin-bottom:16px;align-self:flex-start;">
-        <div style="width:8px;height:8px;border-radius:50%;background:${d.color};"></div>
-        <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:11px;color:${d.color};">${esc(d.label)}</span>
+      <div style="display:inline-flex;align-items:center;gap:7px;background:${d.color}14;border:1.5px solid ${d.color}44;border-radius:8px;padding:5px 12px;margin-bottom:18px;align-self:flex-start;flex-shrink:0;">
+        <div style="width:7px;height:7px;border-radius:50%;background:${d.color};"></div>
+        <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:10px;color:${d.color};">${esc(d.label)}</span>
       </div>
 
-      <!-- Two columns: challenges + CD principles -->
-      <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:16px;min-height:0;overflow:hidden;">
-
-        <!-- Left: sfide -->
-        <div style="display:flex;flex-direction:column;min-height:0;">
-          <div style="font-family:'DM Mono',monospace;font-size:8px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;flex-shrink:0;">Sfide affrontate</div>
-          <div style="flex:1;overflow:hidden;">${challengesHTML}</div>
-        </div>
-
-        <!-- Right: principi CD -->
-        <div style="display:flex;flex-direction:column;min-height:0;">
-          <div style="font-family:'DM Mono',monospace;font-size:8px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;flex-shrink:0;">Principi CD appresi</div>
-          <div style="flex:1;overflow:hidden;">${cdHTML}</div>
-        </div>
-
+      <!-- CHALLENGES SECTION -->
+      <div style="flex:1;min-height:0;overflow:hidden;">
+        <div style="font-family:'DM Mono',monospace;font-size:8px;color:#aaa;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px;">Sfide affrontate</div>
+        ${challengesHTML}${emptyChallenges}
       </div>
 
-      <!-- Workshop info bar -->
-      <div style="border-top:1px solid rgba(255,255,255,.1);margin-top:12px;padding-top:10px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
+      <!-- FOOTER -->
+      <div style="border-top:1.5px solid rgba(15,15,15,.1);margin-top:12px;padding-top:10px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
         <div>
-          <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:10px;color:rgba(255,255,255,.6);">Conversational AI Design Sprint</div>
-          <div style="font-family:'DM Mono',monospace;font-size:8px;color:rgba(255,255,255,.3);margin-top:1px;">URCA! Workshop Engine V9</div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:10px;color:#555;">Conversational AI Design Sprint</div>
+          <div style="font-family:'DM Mono',monospace;font-size:8px;color:#aaa;margin-top:1px;">URCA! Workshop Engine V9</div>
         </div>
         <div style="text-align:right;">
-          <div style="font-family:'DM Mono',monospace;font-size:8px;color:rgba(255,255,255,.3);">${esc(t.name)}</div>
-          <div style="font-family:'DM Mono',monospace;font-size:8px;color:${d.color};">${survived.length}/3 sfide superate</div>
+          <div style="font-family:'DM Mono',monospace;font-size:8px;color:#aaa;">${esc(t.name)}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:8px;color:${d.color};margin-top:1px;">${t.hist.filter(h=>h.st==='survived').length}/3 sfide superate</div>
         </div>
       </div>
-    </div>
 
+    </div>
   </div>`;
 }
 
@@ -2142,21 +2455,13 @@ async function certDownload(){
   const t=G.tables.find(x=>x.id===certState.tableId); if(!t) return;
   const btn=document.getElementById('cert-dl-btn');
   btn.textContent='⏳ Generazione…'; btn.disabled=true;
-
-  // Inject full cert HTML into off-screen template
   const tmpl=document.getElementById('cert-template');
-  tmpl.innerHTML=buildCertHTML(t, certState.name, certState.surname, true);
+  tmpl.innerHTML=buildCertHTML(t, certState.name, certState.surname);
   const certEl=tmpl.firstElementChild;
-
   try{
     const canvas=await html2canvas(certEl,{
-      scale: 2,          // 540×675 CSS → 1080×1350 px
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: '#0A0A0A',
-      logging: false,
-      width: 540,
-      height: 675,
+      scale: 2, useCORS: true, allowTaint: true,
+      backgroundColor: '#F8F5EE', logging: false, width: 540, height: 675,
     });
     const link=document.createElement('a');
     const safeName=((certState.name+'-'+certState.surname).trim().replace(/\s+/g,'-').toLowerCase()||'attestato');
@@ -2168,9 +2473,406 @@ async function certDownload(){
   } catch(err){
     console.error('html2canvas error:',err);
     btn.textContent='Errore — riprova'; btn.disabled=false;
-  } finally{
-    tmpl.innerHTML=''; // clean up
+  } finally{ tmpl.innerHTML=''; }
+}
+
+function shareLinkedIn(){
+  const t=G.tables.find(x=>x.id===certState.tableId);
+  const scenario=t?DB[t.sc].cx.front_title:'Conversational AI Design Sprint';
+  const text=`Ho partecipato al workshop "${scenario}" — un Conversational AI Design Sprint di URCA! dedicato a progettare agenti conversazionali efficaci, empatici e responsabili. 🤖✨\n\n#ConversationalDesign #AIDesign #UX #Workshop #URCA`;
+  navigator.clipboard.writeText(text).catch(()=>{});
+  window.open('https://www.linkedin.com/feed/?shareActive=true','_blank');
+  const stage=document.getElementById('cert-stage');
+  const el=document.createElement('div');
+  el.style.cssText='background:#0a66c2;color:white;border:3px solid #0f0f0f;border-radius:12px;padding:12px 16px;font-family:var(--font-d);font-size:12px;font-weight:700;width:100%;max-width:360px;text-align:center;margin-bottom:8px;';
+  el.textContent='✓ Testo copiato! Incollalo nel post LinkedIn e allega il PNG.';
+  stage.prepend(el);
+  setTimeout(()=>el.remove(),5000);
+}
+
+/* ══════════════════════════════
+   FACILITATORE MOBILE ENGINE
+══════════════════════════════ */
+function showFacQR(){
+  const url=`${location.origin}${location.pathname}#fac`;
+  showQR(url,'Facilitatore Mobile');
+}
+
+function renderFac(){
+  if(UI.view!=='fac') return;
+  facUpdateTimer();
+  const sub=document.getElementById('fac-subtitle');
+  if(sub) sub.textContent=`${G.tables.length} tavoli · ${G.run?'In corso':'In pausa'}`;
+
+  const cont=document.getElementById('fac-tables'); if(!cont) return;
+  if(!G.tables.length){
+    cont.innerHTML=`<div style="text-align:center;padding:40px 20px;font-family:var(--font-m);font-size:11px;color:#555;">Nessun tavolo. Creali dal pannello desktop.</div>`;
+    return;
   }
+
+  cont.innerHTML=G.tables.map(t=>{
+    const d=DB[t.sc];
+    const survived=t.hist.filter(h=>h.st==='survived').length;
+    const actCard=t.act!==null?d.cards[t.act]:null;
+    const hSt=actCard?(t.hist.find(x=>x.id===t.act)||{}).st||'new':null;
+
+    // Status pill
+    const statusPill=!actCard
+      ?`<span style="font-family:var(--font-m);font-size:8px;color:#555;background:#222;padding:2px 8px;border-radius:99px;">In attesa</span>`
+      :hSt==='survived'
+      ?`<span style="font-family:var(--font-m);font-size:8px;color:var(--green);background:#0f2a1a;padding:2px 8px;border-radius:99px;">✓ ${actCard.title}</span>`
+      :hSt==='unlocked'
+      ?`<span style="font-family:var(--font-m);font-size:8px;color:#60a5fa;background:#0f1e35;padding:2px 8px;border-radius:99px;">◑ ${actCard.title}</span>`
+      :`<span style="font-family:var(--font-m);font-size:8px;color:var(--orange);background:#2a1500;padding:2px 8px;border-radius:99px;">● ${actCard.title}</span>`;
+
+    // Card buttons
+    const cardBtns=CARD_KEYS.map(k=>{
+      const done=t.hist.some(h=>h.id===k);
+      const isActive=t.act===k;
+      const card=d.cards[k];
+      return `<button onclick="facAssign('${t.id}','${k}')" class="fac-card-btn${done?' done':isActive?' active-card':''}" ${done?'disabled':''}>${card.label}</button>`;
+    }).join('');
+
+    return `
+      <div class="fac-table-card" style="border-color:${d.color}33;">
+        <div class="fac-table-header" onclick="facToggleTable('${t.id}')">
+          <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+            <div style="width:10px;height:10px;border-radius:50%;background:${d.color};flex-shrink:0;box-shadow:0 0 6px ${d.color}88;"></div>
+            <div>
+              <div style="font-family:var(--font-d);font-weight:700;font-size:14px;color:white;">${esc(t.name)}</div>
+              <div style="font-family:var(--font-m);font-size:9px;color:#666;margin-top:2px;">${esc(d.label)} · ${survived}/3</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            ${statusPill}
+            <span style="color:#444;font-size:12px;" id="fac-arr-${t.id}">▾</span>
+          </div>
+        </div>
+        <div class="fac-table-body" id="fac-body-${t.id}" style="padding:0 12px 14px;">
+          <div style="font-family:var(--font-m);font-size:8px;color:#444;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">Invia carta:</div>
+          <div style="display:flex;gap:6px;margin-bottom:10px;">${cardBtns}</div>
+          <div style="display:flex;gap:6px;">
+            <button onclick="facAssignRandom('${t.id}')" class="fac-card-btn" style="background:#1a1200;border-color:${d.color}55;color:${d.color};">🎲 Random</button>
+            <button onclick="facSosReply('${t.id}')" class="fac-card-btn" style="background:#1a1000;border-color:#f97316;color:#f97316;">🏃 SOS Risposta</button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function facToggleTable(id){
+  const body=document.getElementById('fac-body-'+id);
+  const arr=document.getElementById('fac-arr-'+id);
+  if(!body) return;
+  const open=body.classList.contains('open');
+  // Close all others
+  document.querySelectorAll('.fac-table-body').forEach(b=>b.classList.remove('open'));
+  document.querySelectorAll('[id^="fac-arr-"]').forEach(a=>a.textContent='▾');
+  if(!open){ body.classList.add('open'); if(arr) arr.textContent='▴'; }
+}
+
+function facAssign(tid,k){
+  const t=G.tables.find(x=>x.id===tid); if(!t) return;
+  if(t.hist.some(h=>h.id===k)){ return; } // already done
+  emit('ASSIGN',{tid,k,log:`Facilitatore → [${k.toUpperCase()}] a ${t.name}`});
+}
+
+function facAssignRandom(tid){
+  const t=G.tables.find(x=>x.id===tid); if(!t) return;
+  const avail=CARD_KEYS.filter(k=>!t.hist.some(h=>h.id===k));
+  if(!avail.length) return;
+  const k=avail[Math.floor(Math.random()*avail.length)];
+  emit('ASSIGN',{tid,k,log:`Facilitatore (random) → [${k.toUpperCase()}] a ${t.name}`});
+}
+
+function facSosReply(tid){
+  emit('SOS_REPLY',{tid,log:`Facilitatore in arrivo a ${tid}`});
+  // Remove SOS banner for this table
+  document.getElementById('fac-sos-'+tid)?.remove();
+  facCheckSOSBanner();
+}
+
+function facSpawnSOS(tid){
+  const t=G.tables.find(x=>x.id===tid);
+  const name=t?t.name:'Tavolo';
+  const banner=document.getElementById('fac-sos-banner');
+  const list=document.getElementById('fac-sos-list');
+  if(!banner||!list) return;
+  // Avoid duplicate
+  if(document.getElementById('fac-sos-'+tid)) return;
+  banner.style.display='block';
+  const el=document.createElement('div');
+  el.id='fac-sos-'+tid;
+  el.style.cssText='display:flex;align-items:center;gap:10px;background:white;border:2px solid var(--ink);border-radius:10px;padding:10px 12px;';
+  el.innerHTML=`<span style="font-size:20px;">🆘</span>
+    <div style="flex:1;font-family:var(--font-d);font-weight:700;font-size:13px;">${esc(name)}</div>
+    <button onclick="facSosReply('${tid}')" style="background:var(--ink);color:white;border:none;border-radius:8px;padding:6px 14px;font-family:var(--font-d);font-weight:700;font-size:11px;cursor:pointer;">🏃 ARRIVO</button>`;
+  list.appendChild(el);
+}
+
+function facCheckSOSBanner(){
+  const list=document.getElementById('fac-sos-list');
+  const banner=document.getElementById('fac-sos-banner');
+  if(list && list.children.length===0 && banner) banner.style.display='none';
+}
+
+function facUpdateTimer(){
+  const btn=document.getElementById('fac-timer-btn'); if(!btn) return;
+  const mm=String(Math.floor(G.tr/60)).padStart(2,'0');
+  const ss2=String(G.tr%60).padStart(2,'0');
+  btn.textContent=`${mm}:${ss2}`;
+  btn.classList.toggle('running', G.run);
+}
+
+function facToggleTimer(){
+  if(G.run){
+    clearInterval(timerInt); timerInt=null;
+    emit('T_CTRL',{run:false,t:G.tr,log:'Timer in pausa (facilitatore).'});
+  } else {
+    clearInterval(timerInt);
+    timerInt=setInterval(()=>{
+      if(G.tr>0){ emit('TICK',{t:G.tr-1}); }
+      else{ clearInterval(timerInt); timerInt=null; emit('T_CTRL',{run:false,t:0,log:'⏰ Tempo scaduto!'}); }
+    },1000);
+    emit('T_CTRL',{run:true,t:G.tr,log:'Timer avviato (facilitatore).'});
+  }
+}
+
+function facResetTimer(){
+  clearInterval(timerInt); timerInt=null;
+  emit('T_CTRL',{run:false,t:DEFAULT_TIMER,log:'Timer resettato (facilitatore).'});
+}
+
+function facSetTimer(){
+  const min=parseInt(prompt('Minuti:','10'),10);
+  if(!isNaN(min)&&min>0){
+    clearInterval(timerInt); timerInt=null;
+    emit('T_CTRL',{run:false,t:min*60,log:`Timer impostato a ${min} min (facilitatore).`});
+  }
+}
+
+/* ══════════════════════════════
+   RETROSPETTIVA ENGINE
+══════════════════════════════ */
+let retroState = { slides: [], current: 0, tableId: null };
+
+function retroOpen(tid){
+  const t=G.tables.find(x=>x.id===tid); if(!t) return;
+  const d=DB[t.sc];
+
+  // Build slides array
+  const slides = [];
+
+  // Slide 0: Intro
+  slides.push({ type:'intro', t, d });
+
+  // Slide 1: Context
+  slides.push({ type:'context', t, d });
+
+  // Slide N: one per challenge faced
+  t.hist.forEach(h=>{ slides.push({ type:'challenge', t, d, h }); });
+
+  // Slide final: summary
+  slides.push({ type:'summary', t, d });
+
+  retroState = { slides, current:0, tableId:tid };
+
+  // Set color variable on modal
+  const modal=document.getElementById('retro-modal');
+  modal.style.setProperty('--retro-color', d.color);
+  document.getElementById('retro-table-label').textContent=t.name.toUpperCase();
+
+  // Open
+  modal.classList.add('show');
+  requestAnimationFrame(()=>modal.classList.add('visible'));
+
+  retroRender();
+
+  // Keyboard navigation
+  document.addEventListener('keydown', retroKeyHandler);
+}
+
+function retroClose(){
+  const modal=document.getElementById('retro-modal');
+  modal.classList.remove('visible');
+  setTimeout(()=>modal.classList.remove('show'), 300);
+  document.removeEventListener('keydown', retroKeyHandler);
+}
+
+function retroKeyHandler(e){
+  if(e.key==='ArrowRight'||e.key==='ArrowDown') retroNav(1);
+  if(e.key==='ArrowLeft'||e.key==='ArrowUp')    retroNav(-1);
+  if(e.key==='Escape') retroClose();
+}
+
+function retroNav(dir){
+  const { slides, current } = retroState;
+  const next = current + dir;
+  if(next < 0 || next >= slides.length) return;
+  retroState.current = next;
+  retroRender(dir);
+}
+
+function retroRender(dir=1){
+  const { slides, current } = retroState;
+  const slide = slides[current];
+  const wrap = document.getElementById('retro-slide-wrap');
+  const counter = document.getElementById('retro-counter');
+  const prevBtn = document.getElementById('retro-prev');
+  const nextBtn = document.getElementById('retro-next');
+  const dotsEl  = document.getElementById('retro-dots');
+
+  counter.textContent = `${current+1} / ${slides.length}`;
+  prevBtn.disabled = current === 0;
+  nextBtn.disabled = current === slides.length-1;
+  nextBtn.textContent = current === slides.length-1 ? '✓' : '→';
+
+  // Dots
+  dotsEl.innerHTML = slides.map((_,i)=>
+    `<div class="retro-dot${i===current?' active':''}"></div>`
+  ).join('');
+
+  // Build slide HTML
+  const html = retroBuildSlide(slide);
+
+  // Animate out old, in new
+  const old = wrap.querySelector('.retro-slide');
+  if(old){ old.classList.add(dir>0?'out-left':'out-right'); setTimeout(()=>old.remove(),350); }
+
+  const el = document.createElement('div');
+  el.className = 'retro-slide';
+  el.style.transform = dir>0?'translateX(40px)':'translateX(-40px)';
+  el.innerHTML = html;
+  wrap.appendChild(el);
+  requestAnimationFrame(()=>{ el.style.transform=''; el.classList.add('active'); });
+}
+
+function retroBuildSlide(slide){
+  const { type, t, d, h } = slide;
+
+  if(type==='intro'){
+    const survived=t.hist.filter(x=>x.st==='survived').length;
+    const today=new Date().toLocaleDateString('it-IT',{day:'2-digit',month:'long',year:'numeric'});
+    return `
+      <div style="text-align:center;padding:20px 0;">
+        <div class="retro-eyebrow" style="text-align:center;">Retrospettiva · ${today}</div>
+        <div class="retro-headline" style="font-size:clamp(2.2rem,7vw,4rem);text-align:center;">${esc(t.name)}</div>
+        <div class="retro-divider" style="width:80px;margin:20px auto;opacity:1;"></div>
+        <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.04);border:1.5px solid #222;border-radius:10px;padding:8px 18px;margin-bottom:24px;">
+          <div style="width:8px;height:8px;border-radius:50%;background:${d.color};"></div>
+          <span style="font-family:var(--font-d);font-weight:700;font-size:13px;color:white;">${esc(d.label)}</span>
+        </div>
+        <div style="display:flex;justify-content:center;gap:32px;margin-top:8px;">
+          <div style="text-align:center;">
+            <div style="font-family:var(--font-d);font-weight:700;font-size:2.5rem;color:white;">${t.hist.length}</div>
+            <div style="font-family:var(--font-m);font-size:10px;color:#444;text-transform:uppercase;letter-spacing:.1em;">sfide affrontate</div>
+          </div>
+          <div style="width:1px;background:#1a1a1a;"></div>
+          <div style="text-align:center;">
+            <div style="font-family:var(--font-d);font-weight:700;font-size:2.5rem;color:${survived>0?d.color:'#333'};">${survived}</div>
+            <div style="font-family:var(--font-m);font-size:10px;color:#444;text-transform:uppercase;letter-spacing:.1em;">superate</div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  if(type==='context'){
+    return `
+      <div>
+        <div class="retro-eyebrow">Il Contesto del Progetto</div>
+        <div class="retro-headline">${esc(d.cx.front_title)}</div>
+        <div class="retro-body" style="margin-bottom:20px;">${esc(d.cx.front_desc)}</div>
+        <div class="retro-divider"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <div style="background:#111;border:1.5px solid #1a1a1a;border-radius:12px;padding:14px 16px;">
+            <div style="font-family:var(--font-m);font-size:8px;color:#444;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;">🤖 Agente</div>
+            <div style="font-family:var(--font-d);font-weight:700;font-size:13px;color:white;line-height:1.4;">${esc(d.cx.back_agent)}</div>
+          </div>
+          <div style="background:#111;border:1.5px solid #1a1a1a;border-radius:12px;padding:14px 16px;">
+            <div style="font-family:var(--font-m);font-size:8px;color:#444;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;">👥 Target</div>
+            <div style="font-family:var(--font-d);font-weight:700;font-size:13px;color:white;line-height:1.4;">${esc(d.target)}</div>
+          </div>
+          <div style="background:#111;border:1.5px solid ${d.color}33;border-radius:12px;padding:14px 16px;">
+            <div style="font-family:var(--font-m);font-size:8px;color:${d.color};text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;">🎯 Obiettivo</div>
+            <div style="font-size:13px;color:#ccc;line-height:1.5;">${esc(d.cx.back_goal)}</div>
+          </div>
+          <div style="background:#111;border:1.5px solid #2a1a1a;border-radius:12px;padding:14px 16px;">
+            <div style="font-family:var(--font-m);font-size:8px;color:#dc2626;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;">⚡ Criticità</div>
+            <div style="font-size:13px;color:#ccc;line-height:1.5;">${esc(d.cx.back_challenge)}</div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  if(type==='challenge'){
+    const card=d.cards[h.id];
+    const done=h.st==='survived', unlocked=h.st!=='new';
+    const statusColor=done?'#22c55e':unlocked?'#60a5fa':'#f97316';
+    const statusLabel=done?'✓ Superata':unlocked?'◑ Analizzata':'● Affrontata';
+
+    const hintSection=unlocked?`
+      <div class="retro-hint-box">
+        <div style="font-family:var(--font-m);font-size:8px;color:#666;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;">💡 Soluzione suggerita</div>
+        <div style="font-size:14px;font-weight:700;color:#d4d000;line-height:1.6;">${esc(card.hint)}</div>
+      </div>`:
+      `<div style="border:1.5px dashed #1a1a1a;border-radius:10px;padding:14px;margin-top:12px;text-align:center;">
+        <div style="font-family:var(--font-m);font-size:10px;color:#333;">La soluzione non è stata sbloccata in questa sessione</div>
+      </div>`;
+
+    const cdSection=unlocked?`
+      <div class="retro-cd-box">
+        <div style="font-family:var(--font-m);font-size:8px;color:${d.color};text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px;">📐 Principio CD</div>
+        <div style="font-family:var(--font-d);font-weight:700;font-size:13px;color:white;margin-bottom:4px;">${esc(card.cd_label)}</div>
+        <div style="font-size:12px;color:#555;line-height:1.6;">${esc(card.cd_desc)}</div>
+      </div>`:'';
+
+    return `
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+          <div class="retro-eyebrow" style="margin-bottom:0;">${esc(card.back_title)}</div>
+          <span style="font-family:var(--font-m);font-size:10px;color:${statusColor};background:${statusColor}18;border:1px solid ${statusColor}44;padding:3px 10px;border-radius:99px;">${statusLabel}</span>
+        </div>
+        <div class="retro-headline" style="font-size:clamp(1.4rem,4vw,2rem);">${esc(card.title)}</div>
+        <div class="retro-message-box">
+          <div style="font-size:15px;font-weight:600;color:#aaa;line-height:1.7;font-style:italic;">${esc(card.msg)}</div>
+        </div>
+        <div style="font-family:var(--font-m);font-size:10px;color:#f97316;margin:14px 0 6px;text-transform:uppercase;letter-spacing:.08em;">${esc(card.crash_title)}</div>
+        <div style="font-size:13px;color:#666;font-style:italic;border-left:3px solid #f97316;padding-left:12px;line-height:1.6;margin-bottom:2px;">${esc(card.crash_q)}</div>
+        ${hintSection}
+        ${cdSection}
+      </div>`;
+  }
+
+  if(type==='summary'){
+    const survived=t.hist.filter(x=>x.st==='survived');
+    const rows=t.hist.map(h=>{
+      const card=d.cards[h.id];
+      const done=h.st==='survived', unlocked=h.st!=='new';
+      const col=done?'#22c55e':unlocked?'#60a5fa':'#555';
+      return `<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #111;">
+        <div style="width:8px;height:8px;border-radius:50%;background:${col};flex-shrink:0;"></div>
+        <div style="flex:1;">
+          <div style="font-family:var(--font-d);font-weight:700;font-size:14px;color:white;">${esc(card.title)}</div>
+          <div style="font-family:var(--font-m);font-size:9px;color:#444;margin-top:2px;">${done?'Superata':unlocked?'Analizzata':'Affrontata'} · ${esc(card.cd_label)}</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    return `
+      <div>
+        <div class="retro-eyebrow">Percorso Completato</div>
+        <div class="retro-headline">Un bell'allenamento 🎉</div>
+        <div class="retro-body" style="margin-bottom:20px;">${survived.length} sfide superate su ${t.hist.length} affrontate. Ogni sfida affrontata è un pattern di Conversational Design imparato.</div>
+        <div class="retro-divider"></div>
+        ${rows}
+        <div style="margin-top:20px;padding:16px;background:#0f1a0f;border:1.5px solid #1a3a1a;border-radius:12px;text-align:center;">
+          <div style="font-family:var(--font-m);font-size:9px;color:#2d5a2d;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px;">Prossimo passo</div>
+          <div style="font-family:var(--font-d);font-weight:700;font-size:14px;color:#4ade80;">Scarica l'attestato su #cert 🎓</div>
+        </div>
+      </div>`;
+  }
+
+  return '';
 }
 
 /* ══ BOOT ══ */
