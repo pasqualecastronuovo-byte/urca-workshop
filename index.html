@@ -371,6 +371,9 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--pape
 
 @keyframes cd-reveal { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
 .cd-reveal { animation: cd-reveal .5s .1s cubic-bezier(.175,.885,.32,1.275) both; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@keyframes spin { to { transform: rotate(360deg); } }
 
 .blur-lock { filter: blur(7px); pointer-events: none; user-select: none; }
 .pw-overlay {
@@ -1161,15 +1164,47 @@ function apply(e){
       renderAll();
       break;
   }
+  // Always persist locally
   ss(STORAGE_KEY, JSON.stringify(G));
+  // Admin persists to Supabase DB so any device can load state independently
+  if(UI.view==='admin') saveStateToDB();
+}
+
+/* ══ SUPABASE DB PERSISTENCE ══ */
+async function saveStateToDB(){
+  if(!sbClient) return;
+  try{
+    await sbClient.from('workshop_state').upsert({
+      id: 'main',
+      state: G,
+      updated_at: new Date().toISOString()
+    });
+  } catch(e){ console.warn('saveStateToDB error:', e); }
+}
+
+async function loadStateFromDB(){
+  if(!sbClient) return false;
+  try{
+    const { data, error } = await sbClient
+      .from('workshop_state')
+      .select('state')
+      .eq('id','main')
+      .single();
+    if(!error && data && data.state && Array.isArray(data.state.tables)){
+      G = data.state;
+      ss(STORAGE_KEY, JSON.stringify(G));
+      return true;
+    }
+  } catch(e){ console.warn('loadStateFromDB error:', e); }
+  return false;
 }
 
 /* ══ INIT / ROUTING ══ */
 function init(){
-  // restore state
+  // Restore local state first as fast fallback
   try{ const s=sg(STORAGE_KEY); if(s){ const p=JSON.parse(s); if(p && Array.isArray(p.tables)) G=p; } }catch(e){}
 
-  // cloud config
+  // Cloud config from URL params, localStorage, or hardcoded defaults
   const params=new URLSearchParams(location.search);
   let cfg={}; try{ cfg=JSON.parse(sg(CFG_KEY)||'{}'); }catch(e){}
   const u=params.get('sUrl')||cfg.url||SB_URL_DEF;
@@ -1189,18 +1224,26 @@ function route(){
   const vA=document.getElementById('view-admin');
   const vT=document.getElementById('view-team');
   const vC=document.getElementById('view-cert');
-  [vA,vT,vC].forEach(v=>{ if(v){ v.classList.remove('show'); } });
+  [vA,vT,vC].forEach(v=>{ if(v) v.classList.remove('show'); });
 
   if(hash==='admin'){
     vA.classList.add('show');
     renderAdmin();
   } else if(hash==='cert'){
     vC.classList.add('show');
-    renderCert();
+    // Load from DB first, then render
+    loadStateFromDB().then(loaded=>{
+      if(loaded) renderCert();
+      else renderCert(); // renders with localStorage fallback
+    });
   } else {
+    // Team view: load from DB directly — no dependency on admin being online
     vT.classList.add('show');
-    if(!sbChannel) emit('REQ_SYNC',{});
-    renderTeam();
+    loadStateFromDB().then(loaded=>{
+      renderTeam();
+    }).catch(()=>{
+      renderTeam(); // fallback to localStorage
+    });
   }
 }
 
@@ -1229,8 +1272,12 @@ function connectCloud(u,k){
       const b=document.getElementById('sync-badge');
       if(status==='SUBSCRIBED'){
         if(b){ b.textContent='☁️ CLOUD OK'; b.className='sync-cloud'; b.id='sync-badge'; }
-        if(UI.view==='admin') log('Regia connessa al Cloud.');
-        else emit('REQ_SYNC',{});
+        if(UI.view==='admin'){
+          log('Regia connessa al Cloud.');
+        } else {
+          // Re-load from DB now that we're connected, for freshest state
+          loadStateFromDB().then(loaded=>{ if(loaded) renderAll(); });
+        }
       } else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){
         if(b){ b.textContent='🔴 ERRORE'; b.className='sync-err'; b.id='sync-badge'; }
         sbChannel=null;
@@ -1242,6 +1289,7 @@ function connectCloud(u,k){
 /* ══ RENDER ALL ══ */
 function renderAll(isNewCard=false){
   if(UI.view==='admin') renderAdmin();
+  else if(UI.view==='cert') certRenderTableList();
   else renderTeam(isNewCard);
 }
 
@@ -1817,16 +1865,77 @@ function closeCDModal(){
 let certState = { tableId: null, name: '', surname: '' };
 
 function showCertQR(){
-  const url=`${location.origin}${location.pathname}#cert`;
+  // Embed Supabase credentials in the URL so participant phones can auto-connect
+  const sbUrl=(document.getElementById('sb-url')?.value||'').trim();
+  const sbKey=(document.getElementById('sb-key')?.value||'').trim();
+  let url=`${location.origin}${location.pathname}`;
+  if(sbUrl && sbKey && sbUrl!==SB_URL_DEF){
+    url+=`?sUrl=${encodeURIComponent(sbUrl)}&sKey=${encodeURIComponent(sbKey)}`;
+  }
+  url+='#cert';
   showQR(url,'Attestati Workshop');
 }
 
 function renderCert(){
-  if(!sbChannel) {
-    // Try to load state from localStorage if not synced
-    try{ const s=sg(STORAGE_KEY); if(s){ const p=JSON.parse(s); if(p&&Array.isArray(p.tables)) G=p; } }catch(e){}
-  }
-  certStep(1);
+  if(G.tables.length){ certStep(1); return; }
+
+  // Show loading spinner — DB load is async, state arrives via route()
+  const stage=document.getElementById('cert-stage');
+  if(stage) stage.innerHTML=`
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:16px;text-align:center;padding:40px 20px;">
+      <div style="width:48px;height:48px;border:3px solid var(--cream);border-top-color:var(--orange);border-radius:50%;animation:spin .8s linear infinite;"></div>
+      <div style="font-family:var(--font-d);font-weight:700;font-size:1rem;">Caricamento sessione…</div>
+      <div style="font-family:var(--font-m);font-size:10px;color:#aaa;line-height:1.6;">Recupero i dati da Supabase.</div>
+      <button onclick="location.reload()" class="btn btn-sm" style="margin-top:4px;">🔄 Riprova</button>
+    </div>`;
+}
+
+// Restore cert stage HTML after loading replaces it
+function certRestoreStage(){
+  const stage=document.getElementById('cert-stage');
+  if(!stage) return;
+  stage.innerHTML=`
+    <div class="cert-steps" style="width:100%;max-width:360px;">
+      <div class="cert-step active" id="cs1">1</div>
+      <div class="cert-step-line"></div>
+      <div class="cert-step" id="cs2">2</div>
+      <div class="cert-step-line"></div>
+      <div class="cert-step" id="cs3">3</div>
+    </div>
+    <div id="cert-s1" style="width:100%;max-width:360px;display:flex;flex-direction:column;gap:12px;">
+      <div>
+        <div style="font-family:var(--font-d);font-weight:700;font-size:1.1rem;margin-bottom:4px;">A quale tavolo hai partecipato?</div>
+        <div style="font-family:var(--font-m);font-size:10px;color:#888;">Seleziona il tuo gruppo di lavoro</div>
+      </div>
+      <div id="cert-table-list" class="cert-table-grid"></div>
+      <button onclick="certStep(2)" id="cert-btn1" class="btn btn-ink btn-full" style="font-size:14px;" disabled>Continua →</button>
+    </div>
+    <div id="cert-s2" style="width:100%;max-width:360px;display:none;flex-direction:column;gap:16px;">
+      <div>
+        <div style="font-family:var(--font-d);font-weight:700;font-size:1.1rem;margin-bottom:4px;">Come ti chiami?</div>
+        <div style="font-family:var(--font-m);font-size:10px;color:#888;">Verrà stampato sull'attestato</div>
+      </div>
+      <div class="cert-input-card" style="display:flex;flex-direction:column;gap:10px;">
+        <input id="cert-name" type="text" class="cert-name-input" placeholder="Nome" autocomplete="given-name" oninput="certUpdatePreview()">
+        <input id="cert-surname" type="text" class="cert-name-input" placeholder="Cognome" autocomplete="family-name" oninput="certUpdatePreview()">
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="certStep(1)" class="btn btn-sm" style="flex:1;">← Indietro</button>
+        <button onclick="certStep(3)" id="cert-btn2" class="btn btn-ink btn-sm" style="flex:2;" disabled>Vedi attestato →</button>
+      </div>
+    </div>
+    <div id="cert-s3" style="width:100%;max-width:360px;display:none;flex-direction:column;gap:16px;align-items:center;">
+      <div style="text-align:center;">
+        <div style="font-family:var(--font-d);font-weight:700;font-size:1.1rem;margin-bottom:4px;">Il tuo attestato è pronto!</div>
+        <div style="font-family:var(--font-m);font-size:10px;color:#888;">Scaricalo e condividilo su LinkedIn 🎉</div>
+      </div>
+      <div class="cert-preview-wrap" id="cert-preview-container"></div>
+      <div style="display:flex;gap:8px;width:100%;">
+        <button onclick="certStep(2)" class="btn btn-sm" style="flex:1;">← Modifica</button>
+        <button onclick="certDownload()" class="btn btn-org" style="flex:2;font-size:14px;" id="cert-dl-btn">⬇ Scarica PNG</button>
+      </div>
+      <p style="font-family:var(--font-m);font-size:9px;color:#aaa;text-align:center;line-height:1.6;">Formato 1080×1350px · Ottimizzato per LinkedIn e Instagram</p>
+    </div>`;
 }
 
 function certStep(n){
