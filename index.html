@@ -3047,7 +3047,7 @@ function retroBuildSlideForPDF(slide, accentColor, tableName){
   const F = `font-family:system-ui,-apple-system,sans-serif`;
   const FM = `font-family:'Courier New',monospace`;
   const wrap = (body) => `
-    <div style="width:800px;height:500px;background:#080808;${F};box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column;padding:32px 44px;">
+    <div style="width:800px;height:500px;background:#0f0f0f;${F};box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column;padding:32px 44px;">
       <div style="${FM};font-size:9px;color:${accentColor};text-transform:uppercase;letter-spacing:.12em;margin-bottom:16px;flex-shrink:0;">URCA! Workshop · ${esc(tableName)}</div>
       <div style="flex:1;min-height:0;overflow:hidden;">${body}</div>
     </div>`;
@@ -3057,16 +3057,22 @@ function retroBuildSlideForPDF(slide, accentColor, tableName){
     return wrap(`
       <div style="display:flex;flex-direction:column;justify-content:center;height:100%;text-align:center;gap:16px;">
         <div style="${FM};font-size:10px;color:${accentColor};text-transform:uppercase;letter-spacing:.14em;">Retrospettiva · ${new Date().toLocaleDateString('it-IT',{day:'2-digit',month:'long',year:'numeric'})}</div>
-        <div style="${F};font-weight:800;font-size:2.8rem;color:white;line-height:1;letter-spacing:-.02em;">${esc(t.name)}</div>
+        <div style="${F};font-weight:800;font-size:2.8rem;color:#ffffff;line-height:1;letter-spacing:-.02em;">${esc(t.name)}</div>
         <div style="width:48px;height:3px;background:${accentColor};border-radius:2px;margin:0 auto;"></div>
-        <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.04);border:1px solid #2a2a2a;border-radius:8px;padding:8px 18px;margin:0 auto;">
+        <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:8px 18px;margin:0 auto;">
           <div style="width:8px;height:8px;border-radius:50%;background:${accentColor};"></div>
-          <span style="${F};font-weight:700;font-size:13px;color:white;">${esc(d.label)}</span>
+          <span style="${F};font-weight:700;font-size:13px;color:#ffffff;">${esc(d.label)}</span>
         </div>
         <div style="display:flex;justify-content:center;gap:48px;margin-top:4px;">
-          <div><div style="${F};font-weight:800;font-size:2.4rem;color:white;">${t.hist.length}</div><div style="${FM};font-size:9px;color:#444;text-transform:uppercase;">sfide affrontate</div></div>
-          <div style="width:1px;background:#1a1a1a;"></div>
-          <div><div style="${F};font-weight:800;font-size:2.4rem;color:${survived>0?accentColor:'#333'};">${survived}</div><div style="${FM};font-size:9px;color:#444;text-transform:uppercase;">superate</div></div>
+          <div>
+            <div style="${F};font-weight:800;font-size:2.4rem;color:#ffffff;">${t.hist.length}</div>
+            <div style="${FM};font-size:9px;color:#a0a0a0;text-transform:uppercase;">sfide affrontate</div>
+          </div>
+          <div style="width:1px;background:#3a3a3a;"></div>
+          <div>
+            <div style="${F};font-weight:800;font-size:2.4rem;color:${survived>0?accentColor:'#888888'};">${survived}</div>
+            <div style="${FM};font-size:9px;color:#a0a0a0;text-transform:uppercase;">superate</div>
+          </div>
         </div>
       </div>`);
   }
@@ -3075,23 +3081,23 @@ function retroBuildSlideForPDF(slide, accentColor, tableName){
     return wrap(`
       <div style="display:flex;flex-direction:column;height:100%;gap:12px;">
         <div style="${FM};font-size:10px;color:${accentColor};text-transform:uppercase;letter-spacing:.12em;">Il Contesto del Progetto</div>
-        <div style="${F};font-weight:800;font-size:1.6rem;color:white;line-height:1.1;">${esc(d.cx.front_title)}</div>
+        <div style="${F};font-weight:800;font-size:1.6rem;color:#ffffff;line-height:1.1;">${esc(d.cx.front_title)}</div>
         <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:10px;min-height:0;">
-          <div style="background:#111;border:1px solid #1e1e1e;border-radius:10px;padding:12px;overflow:hidden;">
-            <div style="${FM};font-size:8px;color:#444;text-transform:uppercase;margin-bottom:5px;">🤖 Agente</div>
-            <div style="${F};font-weight:700;font-size:11px;color:white;line-height:1.4;">${esc(d.cx.back_agent)}</div>
+          <div style="background:#1e1e1e;border:1px solid #333;border-radius:10px;padding:12px;overflow:hidden;">
+            <div style="${FM};font-size:8px;color:#a0a0a0;text-transform:uppercase;margin-bottom:5px;">🤖 Agente</div>
+            <div style="${F};font-weight:700;font-size:11px;color:#f0f0f0;line-height:1.4;">${esc(d.cx.back_agent)}</div>
           </div>
-          <div style="background:#111;border:1px solid #1e1e1e;border-radius:10px;padding:12px;overflow:hidden;">
-            <div style="${FM};font-size:8px;color:#444;text-transform:uppercase;margin-bottom:5px;">👥 Target</div>
-            <div style="${F};font-weight:700;font-size:11px;color:white;line-height:1.4;">${esc(d.target)}</div>
+          <div style="background:#1e1e1e;border:1px solid #333;border-radius:10px;padding:12px;overflow:hidden;">
+            <div style="${FM};font-size:8px;color:#a0a0a0;text-transform:uppercase;margin-bottom:5px;">👥 Target</div>
+            <div style="${F};font-weight:700;font-size:11px;color:#f0f0f0;line-height:1.4;">${esc(d.target)}</div>
           </div>
-          <div style="background:#111;border:1px solid ${accentColor}33;border-radius:10px;padding:12px;overflow:hidden;">
+          <div style="background:#1e1e1e;border:1px solid ${accentColor}55;border-radius:10px;padding:12px;overflow:hidden;">
             <div style="${FM};font-size:8px;color:${accentColor};text-transform:uppercase;margin-bottom:5px;">🎯 Obiettivo</div>
-            <div style="${F};font-size:11px;color:#ccc;line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;">${esc(d.cx.back_goal)}</div>
+            <div style="${F};font-size:11px;color:#e0e0e0;line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;">${esc(d.cx.back_goal)}</div>
           </div>
-          <div style="background:#111;border:1px solid #2a1a1a;border-radius:10px;padding:12px;overflow:hidden;">
-            <div style="${FM};font-size:8px;color:#dc2626;text-transform:uppercase;margin-bottom:5px;">⚡ Criticità</div>
-            <div style="${F};font-size:11px;color:#ccc;line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;">${esc(d.cx.back_challenge)}</div>
+          <div style="background:#1e1e1e;border:1px solid #6b2c2c;border-radius:10px;padding:12px;overflow:hidden;">
+            <div style="${FM};font-size:8px;color:#fca5a5;text-transform:uppercase;margin-bottom:5px;">⚡ Criticità</div>
+            <div style="${F};font-size:11px;color:#e0e0e0;line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;">${esc(d.cx.back_challenge)}</div>
           </div>
         </div>
       </div>`);
@@ -3100,31 +3106,31 @@ function retroBuildSlideForPDF(slide, accentColor, tableName){
   if(type==='challenge'){
     const card=d.cards[h.id];
     const done=h.st==='survived', unlocked=h.st!=='new';
-    const statusColor=done?'#22c55e':unlocked?'#60a5fa':'#f97316';
+    const statusColor=done?'#4ade80':unlocked?'#93c5fd':'#fb923c';
     const statusLabel=done?'✓ Superata':unlocked?'◑ Analizzata':'● Affrontata';
     return wrap(`
       <div style="display:flex;height:100%;gap:20px;">
-        <!-- Left column: scenario + message -->
+        <!-- Left: message -->
         <div style="flex:1;display:flex;flex-direction:column;gap:10px;min-width:0;overflow:hidden;">
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
             <div style="${FM};font-size:10px;color:${accentColor};">${esc(card.back_title)}</div>
-            <span style="${FM};font-size:9px;color:${statusColor};background:${statusColor}18;border:1px solid ${statusColor}44;padding:2px 8px;border-radius:99px;">${statusLabel}</span>
+            <span style="${FM};font-size:9px;color:${statusColor};background:${statusColor}22;border:1px solid ${statusColor}66;padding:2px 8px;border-radius:99px;">${statusLabel}</span>
           </div>
-          <div style="${F};font-weight:800;font-size:1.25rem;color:white;line-height:1.15;">${esc(card.title)}</div>
-          <div style="background:#111;border:1px solid #222;border-radius:10px;padding:12px;flex:1;overflow:hidden;">
-            <div style="${FM};font-size:8px;color:#444;margin-bottom:6px;">✍️ Messaggio ricevuto</div>
-            <div style="${F};font-size:11px;color:#aaa;line-height:1.6;font-style:italic;overflow:hidden;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;">${esc(card.msg)}</div>
+          <div style="${F};font-weight:800;font-size:1.25rem;color:#ffffff;line-height:1.15;">${esc(card.title)}</div>
+          <div style="background:#1e1e1e;border:1px solid #333;border-radius:10px;padding:12px;flex:1;overflow:hidden;">
+            <div style="${FM};font-size:8px;color:#a0a0a0;margin-bottom:6px;">✍️ Messaggio ricevuto</div>
+            <div style="${F};font-size:11px;color:#d0d0d0;line-height:1.6;font-style:italic;overflow:hidden;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;">${esc(card.msg)}</div>
           </div>
         </div>
-        <!-- Right column: canvas Q + CD -->
+        <!-- Right: canvas Q + CD -->
         <div style="width:280px;flex-shrink:0;display:flex;flex-direction:column;gap:10px;overflow:hidden;">
-          <div style="background:#110f00;border:1px solid #2a2500;border-radius:10px;padding:12px;flex:1;overflow:hidden;">
-            <div style="${FM};font-size:8px;color:#f97316;text-transform:uppercase;margin-bottom:6px;">🗂 Rifletti sul canvas</div>
-            <div style="${F};font-size:10px;color:#d4a800;line-height:1.55;overflow:hidden;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;">${esc(card.canvas_q)}</div>
+          <div style="background:#1a1800;border:1px solid #3d3600;border-radius:10px;padding:12px;flex:1;overflow:hidden;">
+            <div style="${FM};font-size:8px;color:#fbbf24;text-transform:uppercase;margin-bottom:6px;">🗂 Rifletti sul canvas</div>
+            <div style="${F};font-size:10px;color:#fde68a;line-height:1.55;overflow:hidden;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;">${esc(card.canvas_q)}</div>
           </div>
-          <div style="background:#080f1e;border-left:3px solid ${accentColor};border-radius:0 8px 8px 0;padding:10px 12px;overflow:hidden;">
-            <div style="${FM};font-size:7px;color:#38bdf8;text-transform:uppercase;margin-bottom:4px;">📐 Principio CD</div>
-            <div style="${F};font-weight:700;font-size:10px;color:white;margin-bottom:3px;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${esc(card.cd_label)}</div>
+          <div style="background:#0a1628;border-left:3px solid ${accentColor};border-radius:0 8px 8px 0;padding:10px 12px;overflow:hidden;">
+            <div style="${FM};font-size:7px;color:#7dd3fc;text-transform:uppercase;margin-bottom:4px;">📐 Principio CD</div>
+            <div style="${F};font-weight:700;font-size:10px;color:#e0f2fe;margin-bottom:3px;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${esc(card.cd_label)}</div>
           </div>
         </div>
       </div>`);
@@ -3134,20 +3140,20 @@ function retroBuildSlideForPDF(slide, accentColor, tableName){
     const rows=t.hist.map(h=>{
       const card=d.cards[h.id];
       const done=h.st==='survived', unlocked=h.st!=='new';
-      const col=done?'#22c55e':unlocked?'#60a5fa':'#555';
-      return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #111;">
+      const col=done?'#4ade80':unlocked?'#93c5fd':'#9ca3af';
+      return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #2a2a2a;">
         <div style="width:7px;height:7px;border-radius:50%;background:${col};flex-shrink:0;"></div>
-        <div style="flex:1;${F};font-weight:700;font-size:12px;color:white;">${esc(card.title)}</div>
+        <div style="flex:1;${F};font-weight:700;font-size:12px;color:#f0f0f0;">${esc(card.title)}</div>
         <div style="${FM};font-size:9px;color:${col};">${done?'Superata':unlocked?'Analizzata':'Affrontata'}</div>
-        <div style="${FM};font-size:8px;color:#333;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;max-width:160px;">${esc(card.cd_label)}</div>
+        <div style="${FM};font-size:8px;color:#888;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;max-width:160px;">${esc(card.cd_label)}</div>
       </div>`;
     }).join('');
     const survived=t.hist.filter(x=>x.st==='survived').length;
     return wrap(`
       <div style="display:flex;flex-direction:column;height:100%;gap:12px;">
         <div style="${FM};font-size:10px;color:${accentColor};text-transform:uppercase;letter-spacing:.12em;">Percorso Completato</div>
-        <div style="${F};font-weight:800;font-size:1.5rem;color:white;">Un bell'allenamento! 🎉</div>
-        <div style="${F};font-size:12px;color:#666;">${survived} sfide superate su ${t.hist.length} affrontate.</div>
+        <div style="${F};font-weight:800;font-size:1.5rem;color:#ffffff;">Un bell'allenamento! 🎉</div>
+        <div style="${F};font-size:12px;color:#b0b0b0;">${survived} sfide superate su ${t.hist.length} affrontate.</div>
         <div style="flex:1;overflow:hidden;">${rows}</div>
       </div>`);
   }
