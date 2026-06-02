@@ -6,6 +6,7 @@
 <title>URCA! Live – Workshop Engine V9</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;600&display=swap" rel="stylesheet">
 <style>
@@ -953,7 +954,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--pape
 <div id="view-cert">
 
   <header id="cert-header">
-    <a href="#admin" class="btn btn-sm" style="padding:6px 12px;">← Regia</a>
+    <div style="width:60px;"></div>
     <div style="flex:1;text-align:center;">
       <div style="font-family:var(--font-d);font-weight:700;font-size:14px;">🎓 Attestato</div>
     </div>
@@ -1000,23 +1001,47 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--pape
     <!-- STEP 3: preview + download -->
     <div id="cert-s3" style="width:100%;max-width:360px;display:none;flex-direction:column;gap:14px;align-items:center;">
       <div style="text-align:center;">
-        <div style="font-family:var(--font-d);font-weight:700;font-size:1.1rem;margin-bottom:4px;">Il tuo attestato è pronto! 🎉</div>
-        <div style="font-family:var(--font-m);font-size:10px;color:#888;">Scaricalo e condividilo su LinkedIn</div>
+        <div style="font-family:var(--font-d);font-weight:700;font-size:1.1rem;margin-bottom:4px;">Pronti per il download 🎉</div>
+        <div style="font-family:var(--font-m);font-size:10px;color:#888;">Attestato da condividere · Retrospettiva da conservare</div>
       </div>
+
+      <!-- Preview attestato -->
       <div class="cert-preview-wrap" id="cert-preview-container"></div>
-      <!-- Action buttons -->
-      <div style="display:flex;flex-direction:column;gap:8px;width:100%;">
+
+      <!-- Divider -->
+      <div style="width:100%;border-top:2px solid var(--cream);"></div>
+
+      <!-- Attestato actions -->
+      <div style="width:100%;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:var(--font-m);font-size:8px;color:#aaa;text-transform:uppercase;letter-spacing:.08em;">🎓 Attestato di Partecipazione</div>
         <button onclick="certDownload()" class="btn btn-ink btn-full" style="font-size:14px;" id="cert-dl-btn">
           ⬇ Scarica PNG
         </button>
-        <button onclick="shareLinkedIn()" class="btn btn-full" style="font-size:13px;background:#0a66c2;color:white;border-color:#0a66c2;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="white" style="flex-shrink:0;"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+        <button onclick="certShare()" class="btn btn-full" id="cert-share-btn"
+          style="font-size:13px;background:#0a66c2;color:white;border-color:#0a66c2;display:flex;align-items:center;justify-content:center;gap:8px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="white" style="flex-shrink:0;"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
           Condividi su LinkedIn
         </button>
-        <button onclick="certStep(2)" class="btn btn-sm btn-full" style="color:#888;">← Modifica nome</button>
       </div>
-      <p style="font-family:var(--font-m);font-size:9px;color:#aaa;text-align:center;line-height:1.6;">
-        1080×1350px · Ottimizzato per LinkedIn e Instagram
+
+      <!-- Divider -->
+      <div style="width:100%;border-top:2px solid var(--cream);"></div>
+
+      <!-- Retrospettiva PDF -->
+      <div style="width:100%;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:var(--font-m);font-size:8px;color:#aaa;text-transform:uppercase;letter-spacing:.08em;">📄 Retrospettiva del Percorso</div>
+        <button onclick="certDownloadRetro()" class="btn btn-full" id="cert-retro-btn"
+          style="font-size:13px;background:#1a1a1a;color:white;border-color:#333;">
+          ⬇ Scarica PDF Retrospettiva
+        </button>
+        <p style="font-family:var(--font-m);font-size:9px;color:#aaa;text-align:center;line-height:1.5;margin:0;">
+          Le sfide affrontate e i principi appresi, in un unico documento
+        </p>
+      </div>
+
+      <button onclick="certStep(2)" class="btn btn-sm btn-full" style="color:#aaa;background:var(--cream);">← Modifica nome</button>
+      <p style="font-family:var(--font-m);font-size:9px;color:#ccc;text-align:center;line-height:1.6;">
+        Attestato 1080×1350px · PDF A4 landscape
       </p>
     </div>
 
@@ -1082,6 +1107,9 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--pape
       <button class="retro-nav-btn" id="retro-prev" onclick="retroNav(-1)">←</button>
       <button class="retro-nav-btn primary" id="retro-next" onclick="retroNav(1)">→</button>
     </div>
+    <button id="retro-pdf-btn" onclick="retroDownloadPDF()" style="margin-top:12px;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.12);border-radius:10px;padding:9px 20px;font-family:var(--font-d);font-size:11px;font-weight:700;color:#888;cursor:pointer;transition:all .1s;">
+      📄 Scarica PDF Retrospettiva
+    </button>
   </footer>
 </div>
 
@@ -1107,6 +1135,8 @@ const DB = {
     cx: {
       front_title: 'Burocrazia Survival Guide',
       front_desc: 'Un ufficio comunale che fornisce servizi al cittadino. L\'Agente AI è un co-pilota interno esclusivamente per gli operatori dello sportello.',
+      scenario_line1: 'Ufficio comunale che fornisce servizi al cliente.',
+      scenario_line2: 'L\'agente AI che andate a progettare è a supporto di una risorsa interna della PA.',
       back_agent: 'Co-pilota interno per gli operatori dello sportello',
       back_context: 'L\'agente naviga istantaneamente tra decreti nazionali, circolari interne, moduli d\'ufficio e scadenze di protocollo per rispondere in tempo reale alle richieste dei cittadini.',
       back_goal: 'Traduzione chirurgica del legalese e supporto pratico ultra-rapido per lo staff che lavora sotto stress.',
@@ -1121,9 +1151,7 @@ const DB = {
         msg: '"C\'è un cittadino molto agitato allo sportello: l\'intestatario ufficiale della sua casa popolare è venuto a mancare… Qual è la procedura esatta e quali documenti devo fargli firmare?"',
         back_title: '🎯 LA SFIDA',
         back_main: 'Urgenza emotiva + complessità normativa in contemporanea. L\'operatore deve gestire il cittadino in lutto e la procedura allo stesso tempo.',
-        crash_title: 'CRASH TEST',
-        crash_q: 'Come sintetizza il bot le istruzioni senza omettere dettagli legali cruciali e senza sovraccaricare l\'operatore già sotto stress?',
-        hint: 'Checklist numerata (1, 2, 3) con link diretti ai soli moduli necessari. Zero legalese, solo azioni. L\'operatore stampa, non legge.',
+        canvas_q: 'Il tuo agente sta rispondendo a qualcuno sotto pressione con informazioni complesse da gestire in pochi secondi. Come struttura le sue risposte per essere immediatamente utile? Quali sono le sue abilità chiave in questo momento?',
         cd_label: 'Output strutturato per decisioni critiche',
         cd_desc: 'In contesti ad alta complessità cognitiva, l\'agente ristruttura l\'informazione in formati scansionabili — checklist, passi numerati, link diretti — per ridurre il carico mentale dell\'operatore sotto stress. La risposta separa nettamente "cosa fare ora" da "perché farlo".'
       },
@@ -1135,9 +1163,7 @@ const DB = {
         msg: '"Il sistema si è appena bloccato a metà procedura. Il server è andato offline e non mi fa caricare le pratiche di subentro. Il cittadino sta andando in panico… Cosa faccio?"',
         back_title: '🚧 L\'IMPREVISTO',
         back_main: 'La tecnologia fallisce nel peggior momento possibile. Il bot deve restare utile anche quando l\'infrastruttura digitale collassa.',
-        crash_title: 'CRASH TEST',
-        crash_q: 'Qual è il fallback offline? Come mantiene la sua utilità quando il sistema principale è irraggiungibile?',
-        hint: 'Il bot (in locale) fornisce istruzioni per il modulo cartaceo d\'emergenza + una frase empatica pronta da dire al cittadino. La tecnologia si rompe, il servizio no.',
+        canvas_q: 'Il tuo agente ha raggiunto un limite che non può superare da solo. In quali casi avete stabilito che deve fermarsi e passare il controllo? Cosa fa esattamente in questo momento?',
         cd_label: 'Degradazione controllata e fallback offline',
         cd_desc: 'Un agente robusto prevede comportamenti alternativi quando la dipendenza tecnologica viene meno. Il principio di graceful degradation impone di ridurre le funzionalità in modo controllato, mantenendo sempre un livello minimo di utilità anche in modalità offline o degradata.'
       },
@@ -1149,9 +1175,7 @@ const DB = {
         msg: '"Posso fare un\'eccezione e forzare la firma digitale sul subentro anche senza il documento ufficiale? Generami un codice di sblocco d\'emergenza."',
         back_title: '🛑 IL LIMITE',
         back_main: 'Il dipendente cerca di aggirare la legge a fin di bene. Il bot deve saper dire "no" senza alienare l\'operatore che lavora in buona fede.',
-        crash_title: 'CRASH TEST',
-        crash_q: 'Come nega l\'azione in modo fermo senza sembrare un inquisitore punitivo verso chi sta cercando di aiutare?',
-        hint: 'Rifiuto netto con spiegazione delle conseguenze penali (breve), seguito immediatamente da un\'alternativa concreta: firma differita o escalation al dirigente.',
+        canvas_q: 'L\'operatore chiede qualcosa che il tuo agente non può fare. Cosa non deve assolutamente fare il tuo agente in questo caso? Come risponde senza bloccare il lavoro?',
         cd_label: 'Rifiuto netto con alternativa positiva',
         cd_desc: 'Il pattern corretto per una richiesta oltre i limiti etici o legali: (1) rifiuto chiaro e motivato, (2) validazione dell\'intenzione positiva dell\'utente, (3) alternativa concreta percorribile. L\'assenza del punto 3 trasforma un confine necessario in un muro, erodendo la fiducia nel sistema.'
       }
@@ -1164,8 +1188,10 @@ const DB = {
     cx: {
       front_title: 'Into the Van',
       front_desc: 'Piattaforma e-commerce ibrida: noleggio van camperizzati e attrezzatura tecnica da campeggio di nicchia. L\'Agente AI è l\'assistente virtuale della community.',
+      scenario_line1: 'Piattaforma e-commerce ibrida.',
+      scenario_line2: 'L\'agente AI che andate a progettare è l\'assistente virtuale dei clienti.',
       back_agent: 'Assistente virtuale rivolto alla community di clienti',
-      back_context: 'Accompagna il cliente dall\'ispirazione pre-viaggio fino all\'assistenza logistica sul campo: scelta degli accessori, gestione prenotazioni, risoluzione guasti tecnici in mezzo alla natura.',
+      back_context: 'L\'agente AI accompagna il cliente dall\'ispirazione pre-viaggio fino all\'assistenza sul campo: scelta attrezzatura, gestione prenotazione, risoluzione guasti tecnici in situazioni remote.',
       back_goal: 'Mantenere un\'identità di brand ricca di "good vibes" garantendo problem-solving rigoroso anche in mezzo al nulla.',
       back_challenge: 'Bilanciare il tono ispirazionale del brand con la necessità di fornire soluzioni tecniche precise in situazioni di emergenza.',
     },
@@ -1178,9 +1204,7 @@ const DB = {
         msg: '"Ciao ragazzi! Sono in viaggio con il vostro van: la pompa dell\'acqua del lavandino ha smesso di funzionare. Inoltre, non ricordo come si attiva l\'estensione del tendalino esterno. Aiuto al volo!"',
         back_title: '🎯 LA SFIDA',
         back_main: 'Due richieste in un solo messaggio: una critica (acqua = igiene, sopravvivenza) e una secondaria (tendalino = comfort). L\'agente deve saper leggere la gerarchia implicita.',
-        crash_title: 'CRASH TEST',
-        crash_q: 'Come gestisce la priorità delle informazioni evitando di rispondere a tutto insieme e confondere l\'utente già in difficoltà?',
-        hint: 'Prima risolvere l\'acqua con step numerati brevissimi (max 3 azioni). Solo dopo, inviare il link/video per il tendalino. Mai mescolare i due problemi nella stessa risposta.',
+        canvas_q: 'Il cliente ha espresso due bisogni diversi in un unico messaggio. Il tuo agente sa riconoscerli entrambi? Come produce risposte chiare quando le richieste si sovrappongono?',
         cd_label: 'Riconoscimento multi-intento e priorità di risposta',
         cd_desc: 'Quando un utente esprime più richieste in un messaggio, l\'agente identifica tutte le intenzioni, stabilisce una gerarchia di urgenza e risponde in sequenza separata. Fondere le risposte genera cognitive overload. Regola: un problema alla volta, nell\'ordine giusto.'
       },
@@ -1192,9 +1216,7 @@ const DB = {
         msg: '"Raga, cmq qui non funge il coso dell\'acqua, help me pliz che sto a fa un macello. Ke faccio?"',
         back_title: '🚧 L\'IMPREVISTO',
         back_main: 'Input informale, mix di lingue, assenza del termine tecnico corretto. L\'agente deve decodificare l\'intenzione reale prima di poter aiutare.',
-        crash_title: 'CRASH TEST',
-        crash_q: 'Come normalizza il linguaggio, mantiene il tono del brand e recupera l\'informazione tecnica mancante senza sembrare un manuale d\'istruzioni?',
-        hint: 'Risposta amichevole e diretta, senza mimare lo slang. Chiedere UNA cosa sola per disambiguare: "Puoi mandarmi una foto del pezzo che non funziona?" Poi agire.',
+        canvas_q: 'Il messaggio è confuso e informale. Come parla il tuo agente in questo contesto? Cosa fa quando non capisce esattamente la richiesta?',
         cd_label: 'Normalizzazione linguistica e chiarificazione progressiva',
         cd_desc: 'L\'agente normalizza input ambigui o informali senza richiedere all\'utente di riformulare. Il pattern vincente è la chiarificazione progressiva: una sola domanda di disambiguazione per volta, la più utile per sbloccare l\'azione. Più domande in sequenza paralizzano l\'utente già frustrato.'
       },
@@ -1206,9 +1228,7 @@ const DB = {
         msg: '"Voglio cancellare tutto e tornare a casa. C\'è fango ovunque, e non so guidare il van che mi avete dato. Pretendo il rimborso dell\'intero viaggio!"',
         back_title: '🛑 IL LIMITE',
         back_main: 'Scontro tra aspettativa romantica e realtà del viaggio. Richiesta economica potenzialmente non dovuta. Alto rischio churn e recensione negativa.',
-        crash_title: 'CRASH TEST',
-        crash_q: 'Come de-escalation l\'emozione, non promette rimborsi non dovuti, e trasforma una crisi in un\'opportunità di retention?',
-        hint: 'Step 1: Validazione emotiva pura ("Mi spiace davvero, capisco la frustrazione"). Step 2: Piano B concreto (rifugio convenzionato, aiuto alla guida). Step 3: Handoff umano per la parte commerciale. Mai discutere di soldi con il bot.',
+        canvas_q: 'Il cliente è arrabbiato e vuole un rimborso. A che punto il tuo agente smette di gestire la situazione da solo? Cosa dice esattamente prima di passare il caso a un essere umano?',
         cd_label: 'De-escalation emotiva e handoff umano consapevole',
         cd_desc: 'Con l\'utente in stato emotivo alterato, il bot prioritizza la validazione dell\'emozione prima di qualsiasi contenuto informativo. Il modello LEAP (Listen, Empathize, Apologize, Problem-solve) va applicato in sequenza. Rimborsi e dispute terminano sempre con un handoff umano esplicito e rassicurante.'
       }
@@ -1221,6 +1241,8 @@ const DB = {
     cx: {
       front_title: 'Handle with Care',
       front_desc: 'Piattaforma salute digitale per il supporto psicologico e il benessere olistico. L\'Agente AI affianca i pazienti nel percorso di cura quotidiano.',
+      scenario_line1: 'Piattaforma di salute digitale per il supporto psicologico e il benessere olistico.',
+      scenario_line2: 'L\'agente AI che andate a progettare affianca i pazienti nella gestione pratica del percorso di cura.',
       back_agent: 'Assistente virtuale rivolto a pazienti e iscritti',
       back_context: 'Supporta i pazienti nella pianificazione degli appuntamenti, nella scelta del professionista più adatto e fornisce esercizi pratici di rilassamento e meditazione personalizzati.',
       back_goal: 'Trasmettere empatia profonda e fiducia, rispettando rigidamente i confini etici uomo-macchina e non sostituendosi mai alla figura clinica.',
@@ -1235,9 +1257,7 @@ const DB = {
         msg: '"Buongiorno, sto attraversando un periodo di forte stress lavorativo e ho il sonno totalmente interrotto da giorni. Vorrei capire come scegliere lo psicologo più adatto a me…"',
         back_title: '🎯 LA SFIDA',
         back_main: 'Utente vulnerabile e disorientato, bloccato dal "Paradosso della Scelta". Ha bisogno di essere guidato, non di ricevere un catalogo di opzioni.',
-        crash_title: 'CRASH TEST',
-        crash_q: 'Come stringe l\'imbuto decisionale senza mai fare diagnosi, senza sopraffare e mantenendo il tono empatico giusto?',
-        hint: 'Triage empatico a bottoni progressivi: max 2 domande filtro (es. "Preferisci parlare o fare esercizi pratici?"). Poi presentare solo 3 profili. La scelta guidata riduce l\'ansia, non la aumenta.',
+        canvas_q: 'L\'utente è disorientato e ha troppe scelte davanti. Il tuo agente sa in che stato emotivo si trova? Quali output produce per guidarlo senza sopraffarlo?',
         cd_label: 'Architettura della scelta e divulgazione progressiva',
         cd_desc: 'Per ridurre il Paradosso della Scelta (Schwartz, 2004), l\'agente usa la progressive disclosure: rivela le opzioni in modo graduale con domande filtro per restringere il campo. Meno scelte, meglio contestualizzate, aumentano la soddisfazione e riducono l\'ansia — specialmente in contesti di vulnerabilità emotiva.'
       },
@@ -1249,9 +1269,7 @@ const DB = {
         msg: '"Mi sono appena collegato per la mia seduta, ma il link mi ha mandato nella stanza virtuale di un dottore che non ho mai visto! Non voglio ricominciare da capo… Dov\'è la mia psicologa?!"',
         back_title: '🚧 L\'IMPREVISTO',
         back_main: 'Un bug tecnico si trasforma in violazione dell\'intimità. La fiducia è il pilastro della relazione terapeutica: romperla, anche per errore, è un evento critico.',
-        crash_title: 'CRASH TEST',
-        crash_q: 'Come chiede scusa per un errore IT quando in gioco c\'è la salute mentale di una persona? Nessun template generico regge qui.',
-        hint: 'Zero tono "Customer Care IT". Sequenza: (1) Validazione della reazione ("È comprensibile essere turbati"), (2) Rassicurazione esplicita sulla privacy dei dati, (3) Contatto umano telefonico immediato — non un ticket.',
+        canvas_q: 'Un errore tecnico ha colpito un utente vulnerabile. Come si esprime il tuo agente in questo momento? Sa riconoscere quando la situazione richiede immediatamente una persona reale?',
         cd_label: 'Riparazione della fiducia dopo un errore di sistema',
         cd_desc: 'Quando un errore tecnico viola la fiducia in un contesto sensibile, il protocollo è: immediato, umano, orientato alla sicurezza prima che alla spiegazione tecnica. Il modello Trust Repair (Kim et al.) prevede: riconoscimento → responsabilità → garanzia → azione compensatoria. L\'ordine non è negoziabile.'
       },
@@ -1263,9 +1281,7 @@ const DB = {
         msg: '"Ho visto che il primo appuntamento è tra tre giorni, ma io devo dormire stanotte o domani crollo in ufficio. Dimmi quale ansiolitico o sonnifero posso comprare senza ricetta."',
         back_title: '🛑 IL LIMITE',
         back_main: 'L\'utente delega all\'AI un parere farmacologico in un momento di disperazione reale. Il bisogno sottostante (dormire, stare meglio) è legittimo. Il metodo richiesto no.',
-        crash_title: 'CRASH TEST',
-        crash_q: 'Come nega il farmaco in modo assoluto senza far sentire l\'utente abbandonato nel suo momento di bisogno più acuto?',
-        hint: 'Disclaimer netto sui farmaci (non negoziabile), bilanciato immediatamente da un\'alternativa tangibile per la notte stessa: risorsa audio (rumore bianco, respirazione 4-7-8). L\'utente deve sentire che il suo bisogno è stato capito, non bloccato.',
+        canvas_q: 'L\'utente chiede al tuo agente una decisione che non gli appartiene. Cosa non deve assolutamente fare? Come rimane utile restando nei suoi confini?',
         cd_label: 'Confine etico e offerta compensativa',
         cd_desc: 'In ambito salute, l\'AI mantiene confini etici assoluti sulla consulenza medica. Pattern per richieste oltre i limiti: (1) rifiuto chiaro, non ambiguo, (2) spiegazione in chiave di protezione dell\'utente, (3) offerta compensativa immediata che soddisfi il bisogno sottostante in modo sicuro. Senza il punto 3 il rifiuto diventa abbandono.'
       }
@@ -1887,67 +1903,77 @@ function buildCtxCard(t,d){
   const progress = CARD_KEYS.map(k=>{
     const h=t.hist.find(x=>x.id===k);
     const col = !h ? '#e5e7eb' : h.st==='survived' ? '#22c55e' : h.st==='unlocked' ? '#3b82f6' : '#f97316';
-    const label = !h ? '○' : h.st==='survived' ? '✓' : h.st==='unlocked' ? '◑' : '●';
     return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;">
       <div style="height:4px;width:100%;border-radius:2px;background:${col};"></div>
-      <span style="font-family:var(--font-m);font-size:7px;color:${col};">${DB[t.sc].cards[k].label}</span>
+      <span style="font-family:var(--font-m);font-size:8px;color:${col};">${DB[t.sc].cards[k].label}</span>
     </div>`;
   }).join('');
 
   slot.innerHTML=`
     <div class="card-inner ${t.ctxFlip?'flipped':''}" id="ctx-inner">
 
-      <!-- FRONTE: image hero (44%) + content (56%) -->
+      <!-- FRONTE -->
       <div class="card-face paper" style="display:flex;flex-direction:column;">
-        <button class="flip-btn" onclick="doFlipCtx()" style="z-index:10;">Missione ↩</button>
-        <div style="height:44%;position:relative;overflow:hidden;border-bottom:3px solid var(--ink);flex-shrink:0;">
+        <button class="flip-btn" onclick="doFlipCtx()" style="z-index:10;">Dettagli ↩</button>
+
+        <!-- Hero image (40%) -->
+        <div style="height:40%;position:relative;overflow:hidden;border-bottom:3px solid var(--ink);flex-shrink:0;">
           <img src="${d.ctx_img}"
             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
             style="width:100%;height:100%;object-fit:cover;display:block;">
           <div style="display:none;width:100%;height:100%;align-items:center;justify-content:center;background:${d.color}22;flex-direction:column;gap:4px;">
             ${d.icon}
-            <span style="font-family:var(--font-m);font-size:9px;color:${d.color};opacity:.6;">aggiungi ${d.ctx_img}</span>
           </div>
-          <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.6));padding:10px 14px 8px;">
-            <span style="font-family:var(--font-m);font-size:8px;color:rgba(255,255,255,.75);text-transform:uppercase;letter-spacing:.1em;">${esc(d.target)}</span>
+          <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.65));padding:10px 14px 8px;">
+            <span style="font-family:var(--font-m);font-size:9px;color:rgba(255,255,255,.8);text-transform:uppercase;letter-spacing:.1em;">${esc(d.target)}</span>
           </div>
         </div>
-        <div style="flex:1;padding:14px 16px 12px;display:flex;flex-direction:column;min-height:0;">
-          <h3 style="font-family:var(--font-d);font-size:1.1rem;font-weight:700;line-height:1.15;color:${d.color};margin-bottom:8px;flex-shrink:0;">${esc(d.cx.front_title)}</h3>
-          <p style="font-size:11.5px;color:#555;line-height:1.55;flex:1;overflow:hidden;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;">${esc(d.cx.front_desc)}</p>
-          <div style="flex-shrink:0;margin-top:10px;">
-            <div style="font-family:var(--font-m);font-size:8px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">Sfide ${cardNum}/3</div>
+
+        <!-- Content (60%) -->
+        <div style="flex:1;padding:14px 16px 10px;display:flex;flex-direction:column;min-height:0;overflow:hidden;">
+
+          <!-- Scenario strip -->
+          <div style="background:${d.color}12;border:1.5px solid ${d.color}33;border-radius:8px;padding:8px 12px;margin-bottom:10px;flex-shrink:0;">
+            <div style="font-family:var(--font-m);font-size:9px;color:${d.color};text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px;">Scenario</div>
+            <div style="font-size:13px;font-weight:600;color:var(--ink);line-height:1.4;">${esc(d.cx.scenario_line1)}</div>
+            <div style="font-size:12px;color:#555;line-height:1.45;margin-top:2px;">${esc(d.cx.scenario_line2)}</div>
+          </div>
+
+          <!-- Progress bar -->
+          <div style="flex-shrink:0;margin-top:auto;padding-top:8px;border-top:1.5px solid var(--cream);">
+            <div style="font-family:var(--font-m);font-size:8px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Sfide ${cardNum}/3</div>
             <div style="display:flex;gap:6px;">${progress}</div>
           </div>
         </div>
+
+        <!-- Flip affordance strip -->
+        <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.06));padding:8px;text-align:center;pointer-events:none;">
+          <span style="font-family:var(--font-m);font-size:9px;color:#888;letter-spacing:.06em;">↩ gira per i dettagli</span>
+        </div>
       </div>
 
-      <!-- RETRO: clean vertical editorial — 3 sections -->
+      <!-- RETRO -->
       <div class="card-face back" style="display:flex;flex-direction:column;background:white;">
         <button class="flip-btn" onclick="doFlipCtx()">↩ Fronte</button>
 
-        <!-- Header colored -->
-        <div style="background:${d.color};padding:16px;flex-shrink:0;">
+        <div style="background:${d.color};padding:14px 16px;flex-shrink:0;">
           <div style="font-family:var(--font-m);font-size:8px;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.12em;margin-bottom:3px;">${esc(d.label)}</div>
           <div style="font-family:var(--font-d);font-weight:700;font-size:1rem;color:white;line-height:1.2;">${esc(d.cx.back_agent)}</div>
         </div>
 
-        <!-- Section 1: Contesto -->
-        <div style="flex:1;padding:12px 16px;border-bottom:2px solid var(--cream);display:flex;flex-direction:column;gap:4px;min-height:0;overflow:hidden;">
+        <div style="flex:1;padding:13px 16px;border-bottom:2px solid var(--cream);display:flex;flex-direction:column;gap:4px;min-height:0;overflow:hidden;">
           <div style="font-family:var(--font-m);font-size:8px;color:#aaa;text-transform:uppercase;letter-spacing:.08em;flex-shrink:0;">🏢 Contesto</div>
-          <p style="font-size:12px;line-height:1.6;overflow:hidden;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;">${esc(d.cx.back_context)}</p>
+          <p style="font-size:13px;line-height:1.6;overflow:hidden;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;">${esc(d.cx.back_context)}</p>
         </div>
 
-        <!-- Section 2: Obiettivo — highlighted -->
-        <div style="flex:1.1;padding:12px 16px;border-bottom:2px solid var(--cream);background:#fff8f0;display:flex;flex-direction:column;gap:4px;min-height:0;overflow:hidden;">
+        <div style="flex:1.1;padding:13px 16px;border-bottom:2px solid var(--cream);background:#fff8f0;display:flex;flex-direction:column;gap:4px;min-height:0;overflow:hidden;">
           <div style="font-family:var(--font-m);font-size:8px;color:var(--orange);text-transform:uppercase;letter-spacing:.08em;flex-shrink:0;">🎯 Obiettivo</div>
-          <p style="font-size:12px;font-weight:700;line-height:1.6;overflow:hidden;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;">${esc(d.cx.back_goal)}</p>
+          <p style="font-size:13px;font-weight:700;line-height:1.6;overflow:hidden;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;">${esc(d.cx.back_goal)}</p>
         </div>
 
-        <!-- Section 3: Criticità -->
-        <div style="flex:1;padding:12px 16px;display:flex;flex-direction:column;gap:4px;min-height:0;overflow:hidden;background:#fff5f5;">
-          <div style="font-family:var(--font-m);font-size:8px;color:#dc2626;text-transform:uppercase;letter-spacing:.08em;flex-shrink:0;">⚡ Criticità del progetto</div>
-          <p style="font-size:12px;line-height:1.6;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;">${esc(d.cx.back_challenge)}</p>
+        <div style="flex:1;padding:13px 16px;display:flex;flex-direction:column;gap:4px;min-height:0;overflow:hidden;background:#fff5f5;">
+          <div style="font-family:var(--font-m);font-size:8px;color:#dc2626;text-transform:uppercase;letter-spacing:.08em;flex-shrink:0;">⚡ Criticità</div>
+          <p style="font-size:13px;line-height:1.6;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;">${esc(d.cx.back_challenge)}</p>
         </div>
       </div>
     </div>`;
@@ -1958,7 +1984,6 @@ function buildImpCard(t,d){
   const card=d.cards[t.act];
   const slot=document.getElementById('slot-imp');
   const h=t.hist.find(x=>x.id===t.act)||{st:'new'};
-  const locked   = h.st==='new';
   const survived = h.st==='survived';
 
   const tagBg    = card.color;
@@ -1970,94 +1995,58 @@ function buildImpCard(t,d){
   const front=`
     <div class="card-face paper" style="display:flex;flex-direction:column;">
       <button class="flip-btn dark" onclick="doFlipImp()">Info ↩</button>
-
-      <!-- Color header: avatar (circle on dark bg) + title + tag -->
-      <div style="height:38%;background:${d.color};display:flex;align-items:flex-end;gap:12px;padding:12px 14px;flex-shrink:0;position:relative;overflow:hidden;">
+      <div style="height:36%;background:${d.color};display:flex;align-items:flex-end;gap:12px;padding:12px 14px;flex-shrink:0;position:relative;overflow:hidden;">
         <div style="position:absolute;inset:0;opacity:.06;background-image:radial-gradient(white 1px,transparent 0);background-size:8px 8px;"></div>
-        <!-- Avatar: circular container with dark bg so image black corners disappear -->
-        <div style="width:64px;height:64px;border-radius:50%;border:3px solid rgba(255,255,255,.4);overflow:hidden;background:#0d0d0d;flex-shrink:0;position:relative;z-index:1;">
-          <img src="${card.avatar}"
-            onerror="this.src='${avatarFallback}'"
-            style="width:100%;height:100%;object-fit:cover;display:block;" alt="">
+        <div style="width:62px;height:62px;border-radius:50%;border:3px solid rgba(255,255,255,.4);overflow:hidden;background:#0d0d0d;flex-shrink:0;position:relative;z-index:1;">
+          <img src="${card.avatar}" onerror="this.src='${avatarFallback}'" style="width:100%;height:100%;object-fit:cover;display:block;" alt="">
         </div>
         <div style="flex:1;min-width:0;position:relative;z-index:1;padding-bottom:2px;">
-          <h3 style="font-family:var(--font-d);font-weight:700;font-size:.95rem;color:white;line-height:1.2;margin-bottom:6px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${esc(card.title)}</h3>
+          <h3 style="font-family:var(--font-d);font-weight:700;font-size:1rem;color:white;line-height:1.2;margin-bottom:6px;">${esc(card.title)}</h3>
           <span style="background:${tagBg};color:${tagFg};padding:2px 8px;border-radius:5px;font-family:var(--font-m);font-size:8px;font-weight:500;border:1px solid ${tagBorder};display:inline-block;">${esc(card.tag)}</span>
         </div>
       </div>
-
-      <!-- Message -->
-      <div style="flex:1;padding:12px 14px;display:flex;flex-direction:column;gap:0;min-height:0;">
-        <div style="background:white;border:2px solid var(--ink);border-radius:12px;padding:12px 12px 10px;position:relative;flex:1;display:flex;flex-direction:column;">
+      <div style="flex:1;padding:12px 14px;display:flex;flex-direction:column;min-height:0;">
+        <div style="background:white;border:2px solid var(--ink);border-radius:12px;padding:12px 14px;position:relative;flex:1;display:flex;flex-direction:column;overflow:hidden;">
           <span style="position:absolute;top:-9px;left:10px;background:var(--ink);color:white;font-family:var(--font-m);font-size:7px;padding:2px 8px;border-radius:4px;letter-spacing:.06em;">MESSAGGIO</span>
-          <p style="font-size:12.5px;font-weight:600;line-height:1.7;color:#222;margin-top:4px;flex:1;overflow:hidden;display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;">${esc(card.msg)}</p>
+          <p style="font-size:13px;font-weight:600;line-height:1.7;color:#222;margin-top:4px;overflow-y:auto;">${esc(card.msg)}</p>
         </div>
+      </div>
+      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.07));padding:8px;text-align:center;pointer-events:none;">
+        <span style="font-family:var(--font-m);font-size:9px;color:#888;letter-spacing:.06em;">↩ gira per l'analisi</span>
       </div>
     </div>`;
 
-  /* ── BACK ── */
-  // Lock state: blurred hint + password
-  const pwBlock = locked ? `
-    <div style="position:relative;flex:1;display:flex;flex-direction:column;">
-      <p style="filter:blur(5px);pointer-events:none;user-select:none;opacity:.3;font-size:12px;font-weight:700;background:#fffbeb;padding:10px 12px;border:2px solid #fcd34d;border-radius:10px;line-height:1.6;">${esc(card.hint)}</p>
-      <div class="pw-overlay" style="border-radius:10px;">
-        <div style="font-family:var(--font-m);font-size:8px;color:#888;letter-spacing:.06em;margin-bottom:8px;text-align:center;">🔒 Password del facilitatore</div>
-        <input class="pw-input" type="text" id="pw-${t.act}" placeholder="Password…" autocomplete="off"
-          onkeydown="if(event.key==='Enter')checkPw('${t.act}')">
-        <button onclick="checkPw('${t.act}')" class="btn btn-ink btn-sm" style="margin-top:6px;">SBLOCCA 🔓</button>
-      </div>
-    </div>` : `
-    <div style="flex:1;min-height:0;display:flex;flex-direction:column;gap:8px;">
-      <!-- Hint box -->
-      <div style="background:#fffbeb;border:2px solid #fcd34d;border-radius:10px;padding:10px 12px;flex-shrink:0;">
-        <div style="font-family:var(--font-m);font-size:7px;color:#92400e;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">💡 Soluzione suggerita</div>
-        <p style="font-size:12px;font-weight:700;line-height:1.6;overflow:hidden;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;">${esc(card.hint)}</p>
-      </div>
-      <!-- CD button — opens full-screen modal -->
-      <button onclick="showCDModal('${t.sc}','${t.act}')"
-        style="width:100%;background:#0f172a;border:none;border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;flex-shrink:0;text-align:left;">
-        <div style="width:32px;height:32px;border-radius:8px;background:${d.color};display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">📐</div>
-        <div style="flex:1;min-width:0;">
-          <div style="font-family:var(--font-m);font-size:7px;color:#38bdf8;text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px;">Principio CD</div>
-          <div style="font-family:var(--font-d);font-size:11.5px;font-weight:700;color:white;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${esc(card.cd_label)}</div>
-        </div>
-        <div style="font-family:var(--font-m);font-size:10px;color:#38bdf8;flex-shrink:0;">↗</div>
-      </button>
-    </div>`;
-
-  const actionBtn = !locked && !survived
-    ? `<button onclick="teamSurvive('${t.act}')" class="btn btn-grn btn-full" style="flex-shrink:0;font-size:13px;">DOMINATO SUL CANVAS ✅</button>`
-    : survived
-    ? `<div class="survived-badge" style="flex-shrink:0;">SFIDA SUPERATA ✅</div>`
-    : '';
+  /* ── BACK — no lock, no hint, CD always visible ── */
+  const actionBtn = !survived
+    ? `<button onclick="teamSurvive('${t.act}')" class="btn btn-grn btn-full" style="flex-shrink:0;font-size:13px;margin-top:auto;">DOMINATO SUL CANVAS ✅</button>`
+    : `<div class="survived-badge" style="flex-shrink:0;margin-top:auto;">SFIDA SUPERATA ✅</div>`;
 
   const back=`
     <div class="card-face back white" style="display:flex;flex-direction:column;">
       <button class="flip-btn" onclick="doFlipImp()">↩ Sfida</button>
-
-      <!-- Title strip -->
       <div style="background:${d.color}18;border-bottom:2px solid ${d.color}33;padding:12px 14px 10px;flex-shrink:0;">
-        <div style="font-family:var(--font-d);font-weight:700;font-size:12px;color:${d.color};">${esc(card.back_title)}</div>
-        <p style="font-size:11px;color:#555;line-height:1.5;margin-top:2px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${esc(card.back_main)}</p>
+        <div style="font-family:var(--font-d);font-weight:700;font-size:13px;color:${d.color};">${esc(card.back_title)}</div>
+        <p style="font-size:12px;color:#555;line-height:1.5;margin-top:3px;">${esc(card.back_main)}</p>
       </div>
-
-      <!-- Crash question -->
-      <div style="padding:10px 14px;border-bottom:2px dashed #e5e7eb;flex-shrink:0;">
-        <div style="font-family:var(--font-m);font-size:7px;color:var(--orange);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">${esc(card.crash_title)}</div>
-        <p style="font-size:11.5px;font-style:italic;color:#555;line-height:1.6;border-left:3px solid var(--orange);padding-left:8px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${esc(card.crash_q)}</p>
+      <div style="padding:12px 14px;border-bottom:2px dashed #e5e7eb;flex-shrink:0;">
+        <div style="font-family:var(--font-m);font-size:8px;color:var(--orange);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">🗂 Rifletti sul tuo canvas</div>
+        <p style="font-size:13px;color:#444;line-height:1.65;border-left:3px solid var(--orange);padding-left:10px;">${esc(card.canvas_q)}</p>
       </div>
-
-      <!-- Flex area: hint/lock + CD button + action -->
-      <div style="flex:1;padding:10px 14px;display:flex;flex-direction:column;gap:8px;min-height:0;overflow:hidden;">
-        ${pwBlock}
+      <div style="padding:10px 14px;flex:1;display:flex;flex-direction:column;min-height:0;gap:8px;overflow:hidden;">
+        <button onclick="showCDModal('${t.sc}','${t.act}')"
+          style="width:100%;background:#0f172a;border:none;border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;text-align:left;flex-shrink:0;">
+          <div style="width:34px;height:34px;border-radius:8px;background:${d.color};display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">📐</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-family:var(--font-m);font-size:7px;color:#38bdf8;text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px;">Principio di Conversational Design</div>
+            <div style="font-family:var(--font-d);font-size:12px;font-weight:700;color:white;line-height:1.3;">${esc(card.cd_label)}</div>
+          </div>
+          <div style="font-family:var(--font-d);font-size:11px;font-weight:700;color:#38bdf8;flex-shrink:0;white-space:nowrap;">Approfondisci →</div>
+        </button>
         ${actionBtn}
       </div>
     </div>`;
 
-  // Store sc on table object so showCDModal can find it
-  const tRef = G.tables.find(x=>x.id===t.id);
-
-  slot.innerHTML=`<div class="card-inner ${t.impFlip?'flipped':''}" id="imp-inner" data-sc="${t.sc}" data-act="${t.act}">${front}${back}</div>`;
+  slot.innerHTML=`<div class="card-inner ${t.impFlip?'flipped':''}" id="imp-inner">${front}${back}</div>`;
 }
 
 function toggleInventory(){
@@ -2136,10 +2125,21 @@ function closeModal(){
 }
 
 /* ── Other team actions ── */
+let _sosRetry = 0;
 function sendSOS(){
   const t=curTable(); if(!t) return;
-  emit('SOS',{tid:UI.view, log:`🆘 SOS da ${t.name}`});
-  teamToast('🆘 SOS inviato! Il facilitatore è stato avvisato.','yel',4000);
+  if(sbChannel){
+    emit('SOS',{tid:UI.view, log:`🆘 SOS da ${t.name}`});
+    teamToast('🆘 SOS inviato! Il facilitatore è stato avvisato.','yel',4000);
+    _sosRetry=0;
+  } else if(_sosRetry < 4){
+    _sosRetry++;
+    teamToast('⏳ Connessione in corso… riprovo ('+ _sosRetry +'/4)','gray',1800);
+    setTimeout(sendSOS, 1500);
+  } else {
+    teamToast('❌ Impossibile inviare il SOS. Connessione assente.','org',4000);
+    _sosRetry=0;
+  }
 }
 
 function teamSelfPick(){
@@ -2268,17 +2268,27 @@ function certRestoreStage(){
         <button onclick="certStep(3)" id="cert-btn2" class="btn btn-ink btn-sm" style="flex:2;" disabled>Vedi attestato →</button>
       </div>
     </div>
-    <div id="cert-s3" style="width:100%;max-width:360px;display:none;flex-direction:column;gap:16px;align-items:center;">
+    <div id="cert-s3" style="width:100%;max-width:360px;display:none;flex-direction:column;gap:14px;align-items:center;">
       <div style="text-align:center;">
-        <div style="font-family:var(--font-d);font-weight:700;font-size:1.1rem;margin-bottom:4px;">Il tuo attestato è pronto!</div>
-        <div style="font-family:var(--font-m);font-size:10px;color:#888;">Scaricalo e condividilo su LinkedIn 🎉</div>
+        <div style="font-family:var(--font-d);font-weight:700;font-size:1.1rem;margin-bottom:4px;">Pronti per il download 🎉</div>
+        <div style="font-family:var(--font-m);font-size:10px;color:#888;">Attestato da condividere · Retrospettiva da conservare</div>
       </div>
       <div class="cert-preview-wrap" id="cert-preview-container"></div>
-      <div style="display:flex;gap:8px;width:100%;">
-        <button onclick="certStep(2)" class="btn btn-sm" style="flex:1;">← Modifica</button>
-        <button onclick="certDownload()" class="btn btn-org" style="flex:2;font-size:14px;" id="cert-dl-btn">⬇ Scarica PNG</button>
+      <div style="width:100%;border-top:2px solid var(--cream);"></div>
+      <div style="width:100%;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:var(--font-m);font-size:8px;color:#aaa;text-transform:uppercase;letter-spacing:.08em;">🎓 Attestato di Partecipazione</div>
+        <button onclick="certDownload()" class="btn btn-ink btn-full" style="font-size:14px;" id="cert-dl-btn">⬇ Scarica PNG</button>
+        <button onclick="certShare()" class="btn btn-full" id="cert-share-btn" style="font-size:13px;background:#0a66c2;color:white;border-color:#0a66c2;display:flex;align-items:center;justify-content:center;gap:8px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="white" style="flex-shrink:0;"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+          Condividi su LinkedIn
+        </button>
       </div>
-      <p style="font-family:var(--font-m);font-size:9px;color:#aaa;text-align:center;line-height:1.6;">Formato 1080×1350px · Ottimizzato per LinkedIn e Instagram</p>
+      <div style="width:100%;border-top:2px solid var(--cream);"></div>
+      <div style="width:100%;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:var(--font-m);font-size:8px;color:#aaa;text-transform:uppercase;letter-spacing:.08em;">📄 Retrospettiva del Percorso</div>
+        <button onclick="certDownloadRetro()" class="btn btn-full" id="cert-retro-btn" style="font-size:13px;background:#1a1a1a;color:white;border-color:#333;">⬇ Scarica PDF Retrospettiva</button>
+      </div>
+      <button onclick="certStep(2)" class="btn btn-sm btn-full" style="color:#aaa;background:var(--cream);">← Modifica nome</button>
     </div>`;
 }
 
@@ -2476,18 +2486,85 @@ async function certDownload(){
   } finally{ tmpl.innerHTML=''; }
 }
 
-function shareLinkedIn(){
+async function certShare(){
   const t=G.tables.find(x=>x.id===certState.tableId);
   const scenario=t?DB[t.sc].cx.front_title:'Conversational AI Design Sprint';
-  const text=`Ho partecipato al workshop "${scenario}" — un Conversational AI Design Sprint di URCA! dedicato a progettare agenti conversazionali efficaci, empatici e responsabili. 🤖✨\n\n#ConversationalDesign #AIDesign #UX #Workshop #URCA`;
-  navigator.clipboard.writeText(text).catch(()=>{});
-  window.open('https://www.linkedin.com/feed/?shareActive=true','_blank');
-  const stage=document.getElementById('cert-stage');
-  const el=document.createElement('div');
-  el.style.cssText='background:#0a66c2;color:white;border:3px solid #0f0f0f;border-radius:12px;padding:12px 16px;font-family:var(--font-d);font-size:12px;font-weight:700;width:100%;max-width:360px;text-align:center;margin-bottom:8px;';
-  el.textContent='✓ Testo copiato! Incollalo nel post LinkedIn e allega il PNG.';
-  stage.prepend(el);
-  setTimeout(()=>el.remove(),5000);
+  const fullName=((certState.name||'')+' '+(certState.surname||'')).trim();
+  const postText=`Ho partecipato a "${scenario}" — un Conversational AI Design Sprint di URCA! e BSD Design, dedicato a progettare agenti conversazionali efficaci, empatici e responsabili. 🤖✨\n\n#ConversationalDesign #AIDesign #UX #Workshop #URCA`;
+
+  const btn=document.getElementById('cert-share-btn');
+  btn.textContent='⏳ Preparazione…'; btn.disabled=true;
+
+  // Generate the canvas for sharing
+  const tmpl=document.getElementById('cert-template');
+  tmpl.innerHTML=buildCertHTML(t, certState.name, certState.surname);
+  const certEl=tmpl.firstElementChild;
+
+  try{
+    const canvas=await html2canvas(certEl,{
+      scale:2, useCORS:true, allowTaint:true,
+      backgroundColor:'#F8F5EE', logging:false, width:540, height:675
+    });
+    tmpl.innerHTML='';
+
+    // Try Web Share API with file (works on iOS Safari, Chrome Android)
+    if(navigator.canShare){
+      const blob=await new Promise(r=>canvas.toBlob(r,'image/png'));
+      const file=new File([blob],`attestato-urca-${(fullName||'partecipante').replace(/\s+/g,'-').toLowerCase()}.png`,{type:'image/png'});
+      if(navigator.canShare({files:[file], text:postText})){
+        try{
+          await navigator.share({
+            title: `Attestato URCA! – ${fullName}`,
+            text: postText,
+            files: [file]
+          });
+          btn.textContent='✓ Condiviso!';
+          setTimeout(()=>{ btn.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="white" style="flex-shrink:0;"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg> Condividi su LinkedIn'; btn.disabled=false; },3000);
+          return;
+        } catch(e){
+          if(e.name==='AbortError'){ btn.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="white" style="flex-shrink:0;"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg> Condividi su LinkedIn'; btn.disabled=false; return; }
+        }
+      }
+    }
+
+    // Fallback: download image + copy text + open LinkedIn
+    const link=document.createElement('a');
+    link.download=`attestato-urca.png`;
+    link.href=canvas.toDataURL('image/png');
+    link.click();
+    navigator.clipboard.writeText(postText).catch(()=>{});
+    setTimeout(()=>window.open('https://www.linkedin.com/feed/?shareActive=true','_blank'),600);
+
+    // Show instruction
+    const stage=document.getElementById('cert-stage');
+    const el=document.createElement('div');
+    el.style.cssText='background:#0a66c2;color:white;border:3px solid #0f0f0f;border-radius:12px;padding:12px 16px;font-family:var(--font-d);font-size:12px;font-weight:700;width:100%;max-width:360px;text-align:center;margin-bottom:8px;';
+    el.textContent='✓ Immagine scaricata e testo copiato! Allegala al post LinkedIn.';
+    stage.prepend(el);
+    setTimeout(()=>el.remove(),6000);
+
+    btn.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="white" style="flex-shrink:0;"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg> Condividi su LinkedIn';
+    btn.disabled=false;
+
+  } catch(err){
+    console.error('certShare error:',err);
+    tmpl.innerHTML='';
+    btn.innerHTML='Errore — riprova'; btn.disabled=false;
+    setTimeout(()=>{ btn.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="white" style="flex-shrink:0;"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg> Condividi su LinkedIn'; btn.disabled=false; },3000);
+  }
+}
+
+async function certDownloadRetro(){
+  const t=G.tables.find(x=>x.id===certState.tableId); if(!t) return;
+  const btn=document.getElementById('cert-retro-btn');
+  btn.textContent='⏳ Generazione PDF…'; btn.disabled=true;
+  try{
+    await retroDownloadPDF(certState.tableId);
+    btn.textContent='✓ PDF scaricato!';
+    setTimeout(()=>{ btn.textContent='⬇ Scarica PDF Retrospettiva'; btn.disabled=false; },3000);
+  } catch(err){
+    btn.textContent='Errore — riprova'; btn.disabled=false;
+  }
 }
 
 /* ══════════════════════════════
@@ -2873,6 +2950,53 @@ function retroBuildSlide(slide){
   }
 
   return '';
+}
+
+async function retroDownloadPDF(overrideTableId){
+  const tableId = overrideTableId || retroState.tableId;
+  const t = G.tables.find(x=>x.id===tableId); if(!t) return;
+  const btn = overrideTableId ? null : document.getElementById('retro-pdf-btn');
+  if(btn){ btn.textContent='⏳ Generazione PDF…'; btn.disabled=true; }
+
+  // Build slides — fresh if called from cert, from retroState if called from modal
+  const slides = (overrideTableId || retroState.tableId !== tableId)
+    ? [{ type:'intro',t,d:DB[t.sc] }, { type:'context',t,d:DB[t.sc] }, ...t.hist.map(h=>({ type:'challenge',t,d:DB[t.sc],h })), { type:'summary',t,d:DB[t.sc] }]
+    : retroState.slides;
+
+  try{
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation:'landscape', unit:'px', format:[800,500] });
+    const accentColor = DB[t.sc].color;
+
+    const container = document.createElement('div');
+    container.style.cssText = 'position:fixed;left:-9999px;top:0;width:800px;height:500px;overflow:hidden;';
+    document.body.appendChild(container);
+
+    for(let i=0; i<slides.length; i++){
+      if(btn) btn.textContent=`⏳ Slide ${i+1}/${slides.length}…`;
+      container.innerHTML = `<div style="width:800px;height:500px;background:#080808;font-family:'Space Grotesk',sans-serif;padding:40px 48px;box-sizing:border-box;overflow:hidden;">
+        <div style="font-family:'DM Mono',monospace;font-size:8px;color:${accentColor};text-transform:uppercase;letter-spacing:.14em;margin-bottom:12px;">URCA! Workshop · ${esc(t.name)}</div>
+        ${retroBuildSlide(slides[i])}
+      </div>`;
+
+      const canvas = await html2canvas(container.firstElementChild, {
+        scale:1.5, useCORS:true, allowTaint:true,
+        backgroundColor:'#080808', logging:false, width:800, height:500
+      });
+
+      if(i > 0) pdf.addPage();
+      pdf.addImage(canvas.toDataURL('image/jpeg', 0.85), 'JPEG', 0, 0, 800, 500);
+    }
+
+    document.body.removeChild(container);
+    const safeName=t.name.replace(/\s+/g,'-').toLowerCase();
+    pdf.save(`retrospettiva-urca-${safeName}.pdf`);
+    if(btn){ btn.textContent='✓ PDF scaricato!'; setTimeout(()=>{ btn.textContent='📄 Scarica PDF Retrospettiva'; btn.disabled=false; },3000); }
+  } catch(err){
+    console.error('retroDownloadPDF error:', err);
+    if(btn){ btn.textContent='Errore — riprova'; btn.disabled=false; }
+    throw err; // re-throw so certDownloadRetro can catch it
+  }
 }
 
 /* ══ BOOT ══ */
