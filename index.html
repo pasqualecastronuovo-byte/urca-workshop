@@ -1891,6 +1891,33 @@ function renderTeam(isNewCard=false){
     slotImp.innerHTML='';
   }
 
+  // Completion banner — shown when all 3 challenges have been assigned
+  const existingBanner = document.getElementById('completion-banner');
+  if(t.hist.length === 3 && !existingBanner){
+    const banner = document.createElement('div');
+    banner.id = 'completion-banner';
+    banner.className = 'slide-up';
+    banner.style.cssText = 'width:100%;max-width:420px;background:var(--ink);border:var(--border);border-radius:20px;padding:22px 20px;text-align:center;box-shadow:var(--shadow);flex-shrink:0;';
+    const survived = t.hist.filter(h=>h.st==='survived').length;
+    banner.innerHTML = `
+      <div style="font-size:2.2rem;margin-bottom:10px;">🏆</div>
+      <div style="font-family:var(--font-d);font-weight:700;font-size:1.1rem;color:white;margin-bottom:6px;">Percorso completato!</div>
+      <div style="font-family:var(--font-m);font-size:10px;color:#666;margin-bottom:16px;line-height:1.6;">Hai affrontato tutte e 3 le sfide.<br>${survived > 0 ? survived+'/3 dominate sul canvas.' : 'Ottimo lavoro.'}</div>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+        ${CARD_KEYS.map(k=>{
+          const hh=t.hist.find(x=>x.id===k);
+          const col=hh?.st==='survived'?'#22c55e':hh?.st==='unlocked'?'#3b82f6':'#555';
+          const lbl=hh?.st==='survived'?'✓':hh?.st==='unlocked'?'◑':'○';
+          return `<div style="background:#1a1a1a;border:1.5px solid ${col}44;border-radius:8px;padding:6px 12px;font-family:var(--font-m);font-size:9px;color:${col};">${lbl} ${DB[t.sc].cards[k].title}</div>`;
+        }).join('')}
+      </div>`;
+    document.getElementById('team-stage').appendChild(banner);
+    // Scroll to it
+    setTimeout(()=>{ document.getElementById('team-stage').scrollTo({top:99999,behavior:'smooth'}); },300);
+  } else if(t.hist.length < 3 && existingBanner){
+    existingBanner.remove();
+  }
+
   // Inventory — toggle body class to adjust card height via CSS var
   renderInventory(t,d);
   document.getElementById('view-team').classList.toggle('inv-visible', t.hist.length>0);
@@ -1991,28 +2018,41 @@ function buildImpCard(t,d){
   const tagBorder= tagFg==='#ffffff'?'rgba(255,255,255,.2)':`${tagFg}66`;
   const avatarFallback=`https://api.dicebear.com/7.x/personas/svg?seed=${encodeURIComponent(card.title)}&backgroundColor=0d0d0d`;
 
+  // Sender label based on scenario
+  const senderMap={burocrazia:'Operatrice allo sportello',van:'Cliente in viaggio',salute:'Paziente'};
+  const sender=senderMap[t.sc]||'Utente';
+
   /* ── FRONT ── */
   const front=`
     <div class="card-face paper" style="display:flex;flex-direction:column;">
-      <button class="flip-btn dark" onclick="doFlipImp()">Info ↩</button>
-      <div style="height:36%;background:${d.color};display:flex;align-items:flex-end;gap:12px;padding:12px 14px;flex-shrink:0;position:relative;overflow:hidden;">
-        <div style="position:absolute;inset:0;opacity:.06;background-image:radial-gradient(white 1px,transparent 0);background-size:8px 8px;"></div>
-        <div style="width:62px;height:62px;border-radius:50%;border:3px solid rgba(255,255,255,.4);overflow:hidden;background:#0d0d0d;flex-shrink:0;position:relative;z-index:1;">
+
+      <!-- Entire header is the flip trigger -->
+      <div onclick="doFlipImp()"
+        style="height:40%;background:${d.color};display:flex;align-items:flex-end;gap:12px;padding:12px 14px 0;flex-shrink:0;position:relative;overflow:hidden;cursor:pointer;-webkit-tap-highlight-color:transparent;">
+        <!-- Dot pattern -->
+        <div style="position:absolute;inset:0;opacity:.06;background-image:radial-gradient(white 1px,transparent 0);background-size:8px 8px;pointer-events:none;"></div>
+        <!-- "Gira la card" hint top-right -->
+        <div style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);border-radius:99px;padding:3px 10px;display:flex;align-items:center;gap:4px;z-index:2;">
+          <span style="font-family:var(--font-m);font-size:8px;color:white;letter-spacing:.06em;">Gira la card</span>
+          <span style="font-size:9px;color:white;">↩</span>
+        </div>
+        <!-- Avatar -->
+        <div style="width:60px;height:60px;border-radius:50%;border:3px solid rgba(255,255,255,.4);overflow:hidden;background:#0d0d0d;flex-shrink:0;position:relative;z-index:1;margin-bottom:12px;">
           <img src="${card.avatar}" onerror="this.src='${avatarFallback}'" style="width:100%;height:100%;object-fit:cover;display:block;" alt="">
         </div>
-        <div style="flex:1;min-width:0;position:relative;z-index:1;padding-bottom:2px;">
+        <!-- Title + tag -->
+        <div style="flex:1;min-width:0;position:relative;z-index:1;padding-bottom:12px;">
           <h3 style="font-family:var(--font-d);font-weight:700;font-size:1rem;color:white;line-height:1.2;margin-bottom:6px;">${esc(card.title)}</h3>
           <span style="background:${tagBg};color:${tagFg};padding:2px 8px;border-radius:5px;font-family:var(--font-m);font-size:8px;font-weight:500;border:1px solid ${tagBorder};display:inline-block;">${esc(card.tag)}</span>
         </div>
       </div>
+
+      <!-- Message with sender context -->
       <div style="flex:1;padding:12px 14px;display:flex;flex-direction:column;min-height:0;">
         <div style="background:white;border:2px solid var(--ink);border-radius:12px;padding:12px 14px;position:relative;flex:1;display:flex;flex-direction:column;overflow:hidden;">
-          <span style="position:absolute;top:-9px;left:10px;background:var(--ink);color:white;font-family:var(--font-m);font-size:7px;padding:2px 8px;border-radius:4px;letter-spacing:.06em;">MESSAGGIO</span>
-          <p style="font-size:13px;font-weight:600;line-height:1.7;color:#222;margin-top:4px;overflow-y:auto;">${esc(card.msg)}</p>
+          <div style="position:absolute;top:-9px;left:10px;background:var(--ink);color:white;font-family:var(--font-m);font-size:7px;padding:2px 8px;border-radius:4px;letter-spacing:.06em;">✍️ ${esc(sender)}:</div>
+          <p style="font-size:13px;font-weight:600;line-height:1.7;color:#222;margin-top:4px;overflow-y:auto;font-style:italic;">${esc(card.msg)}</p>
         </div>
-      </div>
-      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.07));padding:8px;text-align:center;pointer-events:none;">
-        <span style="font-family:var(--font-m);font-size:9px;color:#888;letter-spacing:.06em;">↩ gira per l'analisi</span>
       </div>
     </div>`;
 
@@ -2023,11 +2063,20 @@ function buildImpCard(t,d){
 
   const back=`
     <div class="card-face back white" style="display:flex;flex-direction:column;">
-      <button class="flip-btn" onclick="doFlipImp()">↩ Sfida</button>
-      <div style="background:${d.color}18;border-bottom:2px solid ${d.color}33;padding:12px 14px 10px;flex-shrink:0;">
-        <div style="font-family:var(--font-d);font-weight:700;font-size:13px;color:${d.color};">${esc(card.back_title)}</div>
-        <p style="font-size:12px;color:#555;line-height:1.5;margin-top:3px;">${esc(card.back_main)}</p>
+
+      <!-- Clickable title strip to flip back -->
+      <div onclick="doFlipImp()"
+        style="background:${d.color}18;border-bottom:2px solid ${d.color}33;padding:12px 14px 10px;flex-shrink:0;cursor:pointer;-webkit-tap-highlight-color:transparent;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-family:var(--font-d);font-weight:700;font-size:13px;color:${d.color};">${esc(card.back_title)}</div>
+          <p style="font-size:12px;color:#555;line-height:1.5;margin-top:3px;">${esc(card.back_main)}</p>
+        </div>
+        <div style="background:${d.color}22;border:1px solid ${d.color}55;border-radius:99px;padding:3px 10px;white-space:nowrap;flex-shrink:0;display:flex;align-items:center;gap:4px;margin-top:2px;">
+          <span style="font-family:var(--font-m);font-size:8px;color:${d.color};letter-spacing:.06em;">Gira la card</span>
+          <span style="font-size:9px;color:${d.color};">↩</span>
+        </div>
       </div>
+
       <div style="padding:12px 14px;border-bottom:2px dashed #e5e7eb;flex-shrink:0;">
         <div style="font-family:var(--font-m);font-size:8px;color:var(--orange);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">🗂 Rifletti sul tuo canvas</div>
         <p style="font-size:13px;color:#444;line-height:1.65;border-left:3px solid var(--orange);padding-left:10px;">${esc(card.canvas_q)}</p>
@@ -2944,7 +2993,7 @@ function retroBuildSlide(slide){
         ${rows}
         <div style="margin-top:20px;padding:16px;background:#0f1a0f;border:1.5px solid #1a3a1a;border-radius:12px;text-align:center;">
           <div style="font-family:var(--font-m);font-size:9px;color:#2d5a2d;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px;">Prossimo passo</div>
-          <div style="font-family:var(--font-d);font-weight:700;font-size:14px;color:#4ade80;">Scarica l'attestato su #cert 🎓</div>
+          <div style="font-family:var(--font-d);font-weight:700;font-size:14px;color:#4ade80;">Ottimo percorso! 🎉</div>
         </div>
       </div>`;
   }
@@ -2974,10 +3023,10 @@ async function retroDownloadPDF(overrideTableId){
 
     for(let i=0; i<slides.length; i++){
       if(btn) btn.textContent=`⏳ Slide ${i+1}/${slides.length}…`;
-      container.innerHTML = `<div style="width:800px;height:500px;background:#080808;font-family:'Space Grotesk',sans-serif;padding:40px 48px;box-sizing:border-box;overflow:hidden;">
-        <div style="font-family:'DM Mono',monospace;font-size:8px;color:${accentColor};text-transform:uppercase;letter-spacing:.14em;margin-bottom:12px;">URCA! Workshop · ${esc(t.name)}</div>
-        ${retroBuildSlide(slides[i])}
-      </div>`;
+
+      // Build compact PDF-optimized slide HTML (system fonts, smaller sizes, no overflow)
+      const slideHtml = retroBuildSlideForPDF(slides[i], accentColor, t.name);
+      container.innerHTML = slideHtml;
 
       const canvas = await html2canvas(container.firstElementChild, {
         scale:1.5, useCORS:true, allowTaint:true,
@@ -2997,6 +3046,119 @@ async function retroDownloadPDF(overrideTableId){
     if(btn){ btn.textContent='Errore — riprova'; btn.disabled=false; }
     throw err; // re-throw so certDownloadRetro can catch it
   }
+}
+
+/* ── PDF-optimized slide renderer (system fonts, compact, no overflow) ── */
+function retroBuildSlideForPDF(slide, accentColor, tableName){
+  const { type, t, d, h } = slide;
+  const F = `font-family:system-ui,-apple-system,sans-serif`;
+  const FM = `font-family:'Courier New',monospace`;
+  const wrap = (body) => `
+    <div style="width:800px;height:500px;background:#080808;${F};box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column;padding:32px 44px;">
+      <div style="${FM};font-size:9px;color:${accentColor};text-transform:uppercase;letter-spacing:.12em;margin-bottom:16px;flex-shrink:0;">URCA! Workshop · ${esc(tableName)}</div>
+      <div style="flex:1;min-height:0;overflow:hidden;">${body}</div>
+    </div>`;
+
+  if(type==='intro'){
+    const survived=t.hist.filter(x=>x.st==='survived').length;
+    return wrap(`
+      <div style="display:flex;flex-direction:column;justify-content:center;height:100%;text-align:center;gap:16px;">
+        <div style="${FM};font-size:10px;color:${accentColor};text-transform:uppercase;letter-spacing:.14em;">Retrospettiva · ${new Date().toLocaleDateString('it-IT',{day:'2-digit',month:'long',year:'numeric'})}</div>
+        <div style="${F};font-weight:800;font-size:2.8rem;color:white;line-height:1;letter-spacing:-.02em;">${esc(t.name)}</div>
+        <div style="width:48px;height:3px;background:${accentColor};border-radius:2px;margin:0 auto;"></div>
+        <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.04);border:1px solid #2a2a2a;border-radius:8px;padding:8px 18px;margin:0 auto;">
+          <div style="width:8px;height:8px;border-radius:50%;background:${accentColor};"></div>
+          <span style="${F};font-weight:700;font-size:13px;color:white;">${esc(d.label)}</span>
+        </div>
+        <div style="display:flex;justify-content:center;gap:48px;margin-top:4px;">
+          <div><div style="${F};font-weight:800;font-size:2.4rem;color:white;">${t.hist.length}</div><div style="${FM};font-size:9px;color:#444;text-transform:uppercase;">sfide affrontate</div></div>
+          <div style="width:1px;background:#1a1a1a;"></div>
+          <div><div style="${F};font-weight:800;font-size:2.4rem;color:${survived>0?accentColor:'#333'};">${survived}</div><div style="${FM};font-size:9px;color:#444;text-transform:uppercase;">superate</div></div>
+        </div>
+      </div>`);
+  }
+
+  if(type==='context'){
+    return wrap(`
+      <div style="display:flex;flex-direction:column;height:100%;gap:12px;">
+        <div style="${FM};font-size:10px;color:${accentColor};text-transform:uppercase;letter-spacing:.12em;">Il Contesto del Progetto</div>
+        <div style="${F};font-weight:800;font-size:1.6rem;color:white;line-height:1.1;">${esc(d.cx.front_title)}</div>
+        <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:10px;min-height:0;">
+          <div style="background:#111;border:1px solid #1e1e1e;border-radius:10px;padding:12px;overflow:hidden;">
+            <div style="${FM};font-size:8px;color:#444;text-transform:uppercase;margin-bottom:5px;">🤖 Agente</div>
+            <div style="${F};font-weight:700;font-size:11px;color:white;line-height:1.4;">${esc(d.cx.back_agent)}</div>
+          </div>
+          <div style="background:#111;border:1px solid #1e1e1e;border-radius:10px;padding:12px;overflow:hidden;">
+            <div style="${FM};font-size:8px;color:#444;text-transform:uppercase;margin-bottom:5px;">👥 Target</div>
+            <div style="${F};font-weight:700;font-size:11px;color:white;line-height:1.4;">${esc(d.target)}</div>
+          </div>
+          <div style="background:#111;border:1px solid ${accentColor}33;border-radius:10px;padding:12px;overflow:hidden;">
+            <div style="${FM};font-size:8px;color:${accentColor};text-transform:uppercase;margin-bottom:5px;">🎯 Obiettivo</div>
+            <div style="${F};font-size:11px;color:#ccc;line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;">${esc(d.cx.back_goal)}</div>
+          </div>
+          <div style="background:#111;border:1px solid #2a1a1a;border-radius:10px;padding:12px;overflow:hidden;">
+            <div style="${FM};font-size:8px;color:#dc2626;text-transform:uppercase;margin-bottom:5px;">⚡ Criticità</div>
+            <div style="${F};font-size:11px;color:#ccc;line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;">${esc(d.cx.back_challenge)}</div>
+          </div>
+        </div>
+      </div>`);
+  }
+
+  if(type==='challenge'){
+    const card=d.cards[h.id];
+    const done=h.st==='survived', unlocked=h.st!=='new';
+    const statusColor=done?'#22c55e':unlocked?'#60a5fa':'#f97316';
+    const statusLabel=done?'✓ Superata':unlocked?'◑ Analizzata':'● Affrontata';
+    return wrap(`
+      <div style="display:flex;height:100%;gap:20px;">
+        <!-- Left column: scenario + message -->
+        <div style="flex:1;display:flex;flex-direction:column;gap:10px;min-width:0;overflow:hidden;">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <div style="${FM};font-size:10px;color:${accentColor};">${esc(card.back_title)}</div>
+            <span style="${FM};font-size:9px;color:${statusColor};background:${statusColor}18;border:1px solid ${statusColor}44;padding:2px 8px;border-radius:99px;">${statusLabel}</span>
+          </div>
+          <div style="${F};font-weight:800;font-size:1.25rem;color:white;line-height:1.15;">${esc(card.title)}</div>
+          <div style="background:#111;border:1px solid #222;border-radius:10px;padding:12px;flex:1;overflow:hidden;">
+            <div style="${FM};font-size:8px;color:#444;margin-bottom:6px;">✍️ Messaggio ricevuto</div>
+            <div style="${F};font-size:11px;color:#aaa;line-height:1.6;font-style:italic;overflow:hidden;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;">${esc(card.msg)}</div>
+          </div>
+        </div>
+        <!-- Right column: canvas Q + CD -->
+        <div style="width:280px;flex-shrink:0;display:flex;flex-direction:column;gap:10px;overflow:hidden;">
+          <div style="background:#110f00;border:1px solid #2a2500;border-radius:10px;padding:12px;flex:1;overflow:hidden;">
+            <div style="${FM};font-size:8px;color:#f97316;text-transform:uppercase;margin-bottom:6px;">🗂 Rifletti sul canvas</div>
+            <div style="${F};font-size:10px;color:#d4a800;line-height:1.55;overflow:hidden;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;">${esc(card.canvas_q)}</div>
+          </div>
+          <div style="background:#080f1e;border-left:3px solid ${accentColor};border-radius:0 8px 8px 0;padding:10px 12px;overflow:hidden;">
+            <div style="${FM};font-size:7px;color:#38bdf8;text-transform:uppercase;margin-bottom:4px;">📐 Principio CD</div>
+            <div style="${F};font-weight:700;font-size:10px;color:white;margin-bottom:3px;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${esc(card.cd_label)}</div>
+          </div>
+        </div>
+      </div>`);
+  }
+
+  if(type==='summary'){
+    const rows=t.hist.map(h=>{
+      const card=d.cards[h.id];
+      const done=h.st==='survived', unlocked=h.st!=='new';
+      const col=done?'#22c55e':unlocked?'#60a5fa':'#555';
+      return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #111;">
+        <div style="width:7px;height:7px;border-radius:50%;background:${col};flex-shrink:0;"></div>
+        <div style="flex:1;${F};font-weight:700;font-size:12px;color:white;">${esc(card.title)}</div>
+        <div style="${FM};font-size:9px;color:${col};">${done?'Superata':unlocked?'Analizzata':'Affrontata'}</div>
+        <div style="${FM};font-size:8px;color:#333;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;max-width:160px;">${esc(card.cd_label)}</div>
+      </div>`;
+    }).join('');
+    const survived=t.hist.filter(x=>x.st==='survived').length;
+    return wrap(`
+      <div style="display:flex;flex-direction:column;height:100%;gap:12px;">
+        <div style="${FM};font-size:10px;color:${accentColor};text-transform:uppercase;letter-spacing:.12em;">Percorso Completato</div>
+        <div style="${F};font-weight:800;font-size:1.5rem;color:white;">Un bell'allenamento! 🎉</div>
+        <div style="${F};font-size:12px;color:#666;">${survived} sfide superate su ${t.hist.length} affrontate.</div>
+        <div style="flex:1;overflow:hidden;">${rows}</div>
+      </div>`);
+  }
+  return wrap('<div></div>');
 }
 
 /* ══ BOOT ══ */
