@@ -1891,30 +1891,27 @@ function renderTeam(isNewCard=false){
     slotImp.innerHTML='';
   }
 
-  // Completion banner — shown when all 3 challenges have been assigned
+  // Completion banner — shown only when ALL 3 challenges are survived (not just assigned)
   const existingBanner = document.getElementById('completion-banner');
-  if(t.hist.length === 3 && !existingBanner){
+  const allSurvived = t.hist.length === 3 && t.hist.every(h=>h.st==='survived');
+  if(allSurvived && !existingBanner){
     const banner = document.createElement('div');
     banner.id = 'completion-banner';
     banner.className = 'slide-up';
     banner.style.cssText = 'width:100%;max-width:420px;background:var(--ink);border:var(--border);border-radius:20px;padding:22px 20px;text-align:center;box-shadow:var(--shadow);flex-shrink:0;';
-    const survived = t.hist.filter(h=>h.st==='survived').length;
     banner.innerHTML = `
-      <div style="font-size:2.2rem;margin-bottom:10px;">🏆</div>
-      <div style="font-family:var(--font-d);font-weight:700;font-size:1.1rem;color:white;margin-bottom:6px;">Percorso completato!</div>
-      <div style="font-family:var(--font-m);font-size:10px;color:#666;margin-bottom:16px;line-height:1.6;">Hai affrontato tutte e 3 le sfide.<br>${survived > 0 ? survived+'/3 dominate sul canvas.' : 'Ottimo lavoro.'}</div>
+      <div style="font-size:2.4rem;margin-bottom:10px;">🏆</div>
+      <div style="font-family:var(--font-d);font-weight:700;font-size:1.15rem;color:white;margin-bottom:6px;">Percorso completato!</div>
+      <div style="font-family:var(--font-m);font-size:10px;color:#666;margin-bottom:16px;line-height:1.6;">Hai dominato tutte e 3 le sfide sul canvas.<br>Ottimo lavoro!</div>
       <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
         ${CARD_KEYS.map(k=>{
           const hh=t.hist.find(x=>x.id===k);
-          const col=hh?.st==='survived'?'#22c55e':hh?.st==='unlocked'?'#3b82f6':'#555';
-          const lbl=hh?.st==='survived'?'✓':hh?.st==='unlocked'?'◑':'○';
-          return `<div style="background:#1a1a1a;border:1.5px solid ${col}44;border-radius:8px;padding:6px 12px;font-family:var(--font-m);font-size:9px;color:${col};">${lbl} ${DB[t.sc].cards[k].title}</div>`;
+          return `<div style="background:#1a1a1a;border:1.5px solid #22c55e44;border-radius:8px;padding:6px 12px;font-family:var(--font-m);font-size:9px;color:#22c55e;">✓ ${DB[t.sc].cards[k].title}</div>`;
         }).join('')}
       </div>`;
     document.getElementById('team-stage').appendChild(banner);
-    // Scroll to it
     setTimeout(()=>{ document.getElementById('team-stage').scrollTo({top:99999,behavior:'smooth'}); },300);
-  } else if(t.hist.length < 3 && existingBanner){
+  } else if(!allSurvived && existingBanner){
     existingBanner.remove();
   }
 
@@ -2047,11 +2044,11 @@ function buildImpCard(t,d){
         </div>
       </div>
 
-      <!-- Message with sender context -->
+      <!-- Message with sender label inline — no overflow:hidden -->
       <div style="flex:1;padding:12px 14px;display:flex;flex-direction:column;min-height:0;">
-        <div style="background:white;border:2px solid var(--ink);border-radius:12px;padding:12px 14px;position:relative;flex:1;display:flex;flex-direction:column;overflow:hidden;">
-          <div style="position:absolute;top:-9px;left:10px;background:var(--ink);color:white;font-family:var(--font-m);font-size:7px;padding:2px 8px;border-radius:4px;letter-spacing:.06em;">✍️ ${esc(sender)}:</div>
-          <p style="font-size:13px;font-weight:600;line-height:1.7;color:#222;margin-top:4px;overflow-y:auto;font-style:italic;">${esc(card.msg)}</p>
+        <div style="background:white;border:2px solid var(--ink);border-radius:12px;padding:14px 14px 12px;flex:1;display:flex;flex-direction:column;overflow-y:auto;">
+          <div style="font-family:var(--font-m);font-size:9px;color:#999;font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px;flex-shrink:0;">✍️ ${esc(sender)} scrive:</div>
+          <p style="font-size:13px;font-weight:600;line-height:1.75;color:#222;font-style:italic;">${esc(card.msg)}</p>
         </div>
       </div>
     </div>`;
@@ -2536,15 +2533,13 @@ async function certDownload(){
 }
 
 async function certShare(){
-  const t=G.tables.find(x=>x.id===certState.tableId);
-  const scenario=t?DB[t.sc].cx.front_title:'Conversational AI Design Sprint';
-  const fullName=((certState.name||'')+' '+(certState.surname||'')).trim();
-  const postText=`Ho partecipato a "${scenario}" — un Conversational AI Design Sprint di URCA! e BSD Design, dedicato a progettare agenti conversazionali efficaci, empatici e responsabili. 🤖✨\n\n#ConversationalDesign #AIDesign #UX #Workshop #URCA`;
-
   const btn=document.getElementById('cert-share-btn');
   btn.textContent='⏳ Preparazione…'; btn.disabled=true;
 
-  // Generate the canvas for sharing
+  const t=G.tables.find(x=>x.id===certState.tableId);
+  const fullName=((certState.name||'')+' '+(certState.surname||'')).trim();
+
+  // Generate canvas
   const tmpl=document.getElementById('cert-template');
   tmpl.innerHTML=buildCertHTML(t, certState.name, certState.surname);
   const certEl=tmpl.firstElementChild;
@@ -2556,51 +2551,49 @@ async function certShare(){
     });
     tmpl.innerHTML='';
 
-    // Try Web Share API with file (works on iOS Safari, Chrome Android)
+    const fileName=`attestato-urca-${(fullName||'partecipante').replace(/\s+/g,'-').toLowerCase()}.png`;
+
+    // Try Web Share API with file only (no text — user writes their own caption)
     if(navigator.canShare){
       const blob=await new Promise(r=>canvas.toBlob(r,'image/png'));
-      const file=new File([blob],`attestato-urca-${(fullName||'partecipante').replace(/\s+/g,'-').toLowerCase()}.png`,{type:'image/png'});
-      if(navigator.canShare({files:[file], text:postText})){
+      const file=new File([blob], fileName, {type:'image/png'});
+      if(navigator.canShare({files:[file]})){
         try{
-          await navigator.share({
-            title: `Attestato URCA! – ${fullName}`,
-            text: postText,
-            files: [file]
-          });
-          btn.textContent='✓ Condiviso!';
-          setTimeout(()=>{ btn.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="white" style="flex-shrink:0;"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg> Condividi su LinkedIn'; btn.disabled=false; },3000);
+          await navigator.share({ files:[file] });
+          btn.innerHTML=liBtn(); btn.disabled=false;
           return;
         } catch(e){
-          if(e.name==='AbortError'){ btn.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="white" style="flex-shrink:0;"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg> Condividi su LinkedIn'; btn.disabled=false; return; }
+          if(e.name==='AbortError'){ btn.innerHTML=liBtn(); btn.disabled=false; return; }
         }
       }
     }
 
-    // Fallback: download image + copy text + open LinkedIn
+    // Desktop fallback: just download the image and open LinkedIn
     const link=document.createElement('a');
-    link.download=`attestato-urca.png`;
+    link.download=fileName;
     link.href=canvas.toDataURL('image/png');
     link.click();
-    navigator.clipboard.writeText(postText).catch(()=>{});
-    setTimeout(()=>window.open('https://www.linkedin.com/feed/?shareActive=true','_blank'),600);
+    setTimeout(()=>window.open('https://www.linkedin.com/feed/?shareActive=true','_blank'),400);
 
-    // Show instruction
     const stage=document.getElementById('cert-stage');
     const el=document.createElement('div');
     el.style.cssText='background:#0a66c2;color:white;border:3px solid #0f0f0f;border-radius:12px;padding:12px 16px;font-family:var(--font-d);font-size:12px;font-weight:700;width:100%;max-width:360px;text-align:center;margin-bottom:8px;';
-    el.textContent='✓ Immagine scaricata e testo copiato! Allegala al post LinkedIn.';
+    el.textContent='✓ Immagine scaricata! Allega il PNG al tuo post LinkedIn.';
     stage.prepend(el);
-    setTimeout(()=>el.remove(),6000);
+    setTimeout(()=>el.remove(),5000);
 
-    btn.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="white" style="flex-shrink:0;"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg> Condividi su LinkedIn';
-    btn.disabled=false;
+    btn.innerHTML=liBtn(); btn.disabled=false;
 
   } catch(err){
     console.error('certShare error:',err);
     tmpl.innerHTML='';
-    btn.innerHTML='Errore — riprova'; btn.disabled=false;
-    setTimeout(()=>{ btn.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="white" style="flex-shrink:0;"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg> Condividi su LinkedIn'; btn.disabled=false; },3000);
+    btn.textContent='Errore — riprova'; btn.disabled=false;
+    setTimeout(()=>{ btn.innerHTML=liBtn(); btn.disabled=false; },3000);
   }
+}
+
+function liBtn(){
+  return `<svg width="15" height="15" viewBox="0 0 24 24" fill="white" style="flex-shrink:0;"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg> Condividi su LinkedIn`;
 }
 
 async function certDownloadRetro(){
