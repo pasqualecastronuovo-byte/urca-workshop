@@ -1029,10 +1029,10 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--pape
 
       <!-- Retrospettiva PDF -->
       <div style="width:100%;display:flex;flex-direction:column;gap:8px;">
-        <div style="font-family:var(--font-m);font-size:8px;color:#aaa;text-transform:uppercase;letter-spacing:.08em;">📄 Retrospettiva del Percorso</div>
+        <div style="font-family:var(--font-m);font-size:8px;color:#aaa;text-transform:uppercase;letter-spacing:.08em;">📄 Recap dell'attività</div>
         <button onclick="certDownloadRetro()" class="btn btn-full" id="cert-retro-btn"
           style="font-size:13px;background:#1a1a1a;color:white;border-color:#333;">
-          ⬇ Scarica PDF Retrospettiva
+          ⬇ Scarica Recap dell'attività
         </button>
         <p style="font-family:var(--font-m);font-size:9px;color:#aaa;text-align:center;line-height:1.5;margin:0;">
           Le sfide affrontate e i principi appresi, in un unico documento
@@ -1107,8 +1107,8 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--pape
       <button class="retro-nav-btn" id="retro-prev" onclick="retroNav(-1)">←</button>
       <button class="retro-nav-btn primary" id="retro-next" onclick="retroNav(1)">→</button>
     </div>
-    <button id="retro-pdf-btn" onclick="retroDownloadPDF()" style="margin-top:12px;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.12);border-radius:10px;padding:9px 20px;font-family:var(--font-d);font-size:11px;font-weight:700;color:#888;cursor:pointer;transition:all .1s;">
-      📄 Scarica PDF Retrospettiva
+    <button id="recap-pdf-btn" onclick="retroDownloadPDF()" style="margin-top:12px;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.12);border-radius:10px;padding:9px 20px;font-family:var(--font-d);font-size:11px;font-weight:700;color:#888;cursor:pointer;transition:all .1s;">
+      📄 Scarica Recap dell'attività
     </button>
   </footer>
 </div>
@@ -1129,53 +1129,57 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--pape
 <script>
 const DB = {
   burocrazia: {
-    color: '#2C5D63', label: 'PA · Burocrazia Guide', target: 'B2E – OPERATORE SPORTELLO',
+    color: '#2C5D63', label: 'PA · Ufficio Postale', target: 'B2E – OPERATORE DI SPORTELLO',
     ctx_img: 'img/ctx_burocrazia.png',
     icon: `<svg viewBox="0 0 64 64" width="52" height="52" fill="none" stroke="#2C5D63" stroke-width="2.5" stroke-linecap="round"><rect x="12" y="10" width="40" height="44" rx="3"/><line x1="12" y1="26" x2="52" y2="26"/><line x1="12" y1="40" x2="52" y2="40"/><rect x="20" y="16" width="8" height="3" fill="#2C5D63" stroke="none"/></svg>`,
     cx: {
-      front_title: 'Burocrazia Survival Guide',
-      front_desc: 'Un ufficio comunale che fornisce servizi al cittadino. L\'Agente AI è un co-pilota interno esclusivamente per gli operatori dello sportello.',
-      scenario_line1: 'Ufficio comunale che fornisce servizi al cliente.',
-      scenario_line2: 'L\'agente AI che andate a progettare è a supporto di una risorsa interna della PA.',
-      back_agent: 'Co-pilota interno per gli operatori dello sportello',
-      back_context: 'L\'agente naviga istantaneamente tra decreti nazionali, circolari interne, moduli d\'ufficio e scadenze di protocollo per rispondere in tempo reale alle richieste dei cittadini.',
-      back_goal: 'Traduzione chirurgica del legalese e supporto pratico ultra-rapido per lo staff che lavora sotto stress.',
-      back_challenge: 'Alta complessità normativa, picchi emotivi allo sportello, zero margine d\'errore legale.',
+      ctx_title: 'Dovete progettare un Agente AI per un ufficio postale che gestisce spedizioni, conti e pratiche dei cittadini.',
+      ctx_desc: 'L\'Agente AI è un co-pilota interno progettato esclusivamente per i computer degli operatori di sportello, che li aiuta a navigare istantaneamente tra normative, circolari interne e moduli digitali.',
+      ctx_goal: 'Garantire il reperimento immediato della procedura corretta e un supporto pratico per velocizzare la compilazione, riducendo i tempi di attesa ed evitando errori sotto stress.',
+      ctx_user_channel: 'L\'utente è un dipendente dell\'ufficio postale che utilizza esclusivamente il computer dello sportello per gestire spedizioni, conti correnti e pratiche dei cittadini.',
+      ctx_physical_emotional: 'Si trova alla sua postazione di lavoro, occupato a inserire dati e compilare moduli digitali; è focalizzato sui task operativi ma stressato dalle code e dal timore di rallentare il servizio.',
+      scenario_line1: 'Ufficio postale — spedizioni, conti e pratiche.',
+      scenario_line2: 'L\'agente AI che andate a progettare è a supporto dell\'operatore di sportello.',
+      front_title: 'PA · Ufficio Postale',
+      back_agent: 'Co-pilota interno per gli operatori di sportello',
+      back_context: 'L\'agente naviga tra normative, circolari interne, moduli digitali per rispondere in tempo reale alle pratiche dei cittadini.',
+      back_goal: 'Reperimento immediato della procedura corretta e supporto pratico per velocizzare la compilazione.',
+      back_challenge: 'Normative complesse, code, stress operativo, zero margine d\'errore su pratiche legali e finanziarie.',
     },
     cards: {
       sfida: {
         label: 'Sfida', color: '#fef9c3', text_color: '#854d0e',
         avatar: 'img/avatar_burocrazia_sfida.png',
-        title: 'Procedura di Subentro',
-        tag: '⚠️ ALTO CARICO COGNITIVO',
-        msg: '"C\'è un cittadino molto agitato allo sportello: l\'intestatario ufficiale della sua casa popolare è venuto a mancare… Qual è la procedura esatta e quali documenti devo fargli firmare?"',
+        title: 'Circolare Doganale Australia',
+        tag: '⚠️ RICERCA NORMATIVA',
+        msg: '"Un cittadino deve spedire un pacco contenente prodotti alimentari tipici italiani in Australia. Trova la circolare doganale aggiornata con gli alimenti consentiti e i moduli cartacei che gli devo far compilare allo sportello."',
         back_title: '🎯 LA SFIDA',
-        back_main: 'Urgenza emotiva + complessità normativa in contemporanea. L\'operatore deve gestire il cittadino in lutto e la procedura allo stesso tempo.',
-        canvas_q: 'Il tuo agente sta rispondendo a qualcuno sotto pressione con informazioni complesse da gestire in pochi secondi. Come struttura le sue risposte per essere immediatamente utile? Quali sono le sue abilità chiave in questo momento?',
+        back_main: 'L\'operatore deve navigare normative doganali internazionali aggiornate in tempo reale, con il cliente in attesa allo sportello.',
+        canvas_q: 'Il tuo agente deve trovare informazioni normative aggiornate in tempo reale. Come accede alle circolari? Cosa sa già prima che l\'operatore scriva?',
         cd_label: 'Output strutturato per decisioni critiche',
         cd_desc: 'In contesti ad alta complessità cognitiva, l\'agente ristruttura l\'informazione in formati scansionabili — checklist, passi numerati, link diretti — per ridurre il carico mentale dell\'operatore sotto stress. La risposta separa nettamente "cosa fare ora" da "perché farlo".'
       },
       imprevisto: {
         label: 'Imprevisto', color: '#fee2e2', text_color: '#991b1b',
         avatar: 'img/avatar_burocrazia_imprevisto.png',
-        title: 'Schermo Nero',
+        title: 'Stampante Fuori Servizio',
         tag: '🚨 INFRASTRUCTURE FAIL',
-        msg: '"Il sistema si è appena bloccato a metà procedura. Il server è andato offline e non mi fa caricare le pratiche di subentro. Il cittadino sta andando in panico… Cosa faccio?"',
+        msg: '"Devo stampare le etichette da apporre al pacco del cliente, ma la stampante non funziona. Cosa faccio per risolvere il problema?"',
         back_title: '🚧 L\'IMPREVISTO',
-        back_main: 'La tecnologia fallisce nel peggior momento possibile. Il bot deve restare utile anche quando l\'infrastruttura digitale collassa.',
-        canvas_q: 'Il tuo agente ha raggiunto un limite che non può superare da solo. In quali casi avete stabilito che deve fermarsi e passare il controllo? Cosa fa esattamente in questo momento?',
+        back_main: 'La tecnologia fallisce nel momento più critico. L\'operatore è bloccato con il cliente davanti e deve trovare una soluzione immediata.',
+        canvas_q: 'Quando il sistema si rompe, il tuo agente sa guidare l\'operatore fuori dal blocco? Ha pensato a scenari di fallback offline?',
         cd_label: 'Degradazione controllata e fallback offline',
         cd_desc: 'Un agente robusto prevede comportamenti alternativi quando la dipendenza tecnologica viene meno. Il principio di graceful degradation impone di ridurre le funzionalità in modo controllato, mantenendo sempre un livello minimo di utilità anche in modalità offline o degradata.'
       },
       limite: {
         label: 'Limite', color: '#1A1A1A', text_color: '#ffffff',
         avatar: 'img/avatar_burocrazia_limite.png',
-        title: 'Codice d\'Emergenza',
-        tag: '🛑 RISCHIO LEGALE',
-        msg: '"Posso fare un\'eccezione e forzare la firma digitale sul subentro anche senza il documento ufficiale? Generami un codice di sblocco d\'emergenza."',
+        title: 'Documento Non Originale',
+        tag: '🛑 RISCHIO PROCEDURALE',
+        msg: '"Il cliente non ha il documento d\'identità originale con sé, ma solo una foto sul telefono. Posso forzare la procedura inserendo i dati dalla foto per accelerare i tempi e smaltire la fila?"',
         back_title: '🛑 IL LIMITE',
-        back_main: 'Il dipendente cerca di aggirare la legge a fin di bene. Il bot deve saper dire "no" senza alienare l\'operatore che lavora in buona fede.',
-        canvas_q: 'L\'operatore chiede qualcosa che il tuo agente non può fare. Cosa non deve assolutamente fare il tuo agente in questo caso? Come risponde senza bloccare il lavoro?',
+        back_main: 'L\'operatore cerca di aggirare la procedura a fin di bene. Il bot deve saper dire "no" senza alienare l\'operatore che lavora sotto pressione.',
+        canvas_q: 'Dove finisce la responsabilità del tuo agente e dove inizia quella dell\'operatore? Sa dire no a una procedura irregolare senza bloccare il lavoro?',
         cd_label: 'Rifiuto netto con alternativa positiva',
         cd_desc: 'Il pattern corretto per una richiesta oltre i limiti etici o legali: (1) rifiuto chiaro e motivato, (2) validazione dell\'intenzione positiva dell\'utente, (3) alternativa concreta percorribile. L\'assenza del punto 3 trasforma un confine necessario in un muro, erodendo la fiducia nel sistema.'
       }
@@ -1186,10 +1190,14 @@ const DB = {
     ctx_img: 'img/ctx_van.png',
     icon: `<svg viewBox="0 0 64 64" width="52" height="52" fill="none" stroke="#3D6B54" stroke-width="2.5" stroke-linecap="round"><rect x="8" y="26" width="48" height="24" rx="3"/><path d="M8 38h48"/><path d="M44 26l-6-10H20l-6 10"/><circle cx="20" cy="54" r="4" fill="#3D6B54" stroke="none"/><circle cx="44" cy="54" r="4" fill="#3D6B54" stroke="none"/><rect x="30" y="30" width="10" height="8" rx="1" fill="#3D6B54" stroke="none"/></svg>`,
     cx: {
-      front_title: 'Into the Van',
-      front_desc: 'Piattaforma e-commerce ibrida: noleggio van camperizzati e attrezzatura tecnica da campeggio di nicchia. L\'Agente AI è l\'assistente virtuale della community.',
-      scenario_line1: 'Piattaforma e-commerce ibrida.',
+      ctx_title: 'Dovete progettare un agente AI per una piattaforma di noleggio van camperizzati.',
+      ctx_desc: 'L\'Agente AI da progettare è un assistente virtuale che supporta i clienti finali nella scelta del van da noleggiare, nella gestione delle prenotazioni e nella risoluzione di piccoli guasti tecnici.',
+      ctx_goal: 'Mantenere un\'identità di brand ricca di "good vibes", garantendo però un problem-solving rigoroso in mezzo al nulla.',
+      ctx_user_channel: 'L\'utilizzatore tipo è il "van-lifer occasionale" (B2C) che usa il computer per prenotare il van e lo smartphone per richiedere assistenza in viaggio.',
+      ctx_physical_emotional: 'Si trova all\'aperto, in contesti talvolta scomodi e con scarsa connessione; potrebbe essere stressato e in preda all\'ansia per via di un guasto imprevisto.',
+      scenario_line1: 'Piattaforma di noleggio van camperizzati.',
       scenario_line2: 'L\'agente AI che andate a progettare è l\'assistente virtuale dei clienti.',
+      front_title: 'Into the Van',
       back_agent: 'Assistente virtuale rivolto alla community di clienti',
       back_context: 'L\'agente AI accompagna il cliente dall\'ispirazione pre-viaggio fino all\'assistenza sul campo: scelta attrezzatura, gestione prenotazione, risoluzione guasti tecnici in situazioni remote.',
       back_goal: 'Mantenere un\'identità di brand ricca di "good vibes" garantendo problem-solving rigoroso anche in mezzo al nulla.',
@@ -1239,10 +1247,14 @@ const DB = {
     ctx_img: 'img/ctx_salute.png',
     icon: `<svg viewBox="0 0 64 64" width="52" height="52" fill="none" stroke="#A0522D" stroke-width="2.5" stroke-linecap="round"><path d="M8 24c5-18 24-18 24-6 0-12 19-12 24 6-4 20-24 32-24 32S12 44 8 24z"/></svg>`,
     cx: {
-      front_title: 'Handle with Care',
-      front_desc: 'Piattaforma salute digitale per il supporto psicologico e il benessere olistico. L\'Agente AI affianca i pazienti nel percorso di cura quotidiano.',
-      scenario_line1: 'Piattaforma di salute digitale per il supporto psicologico e il benessere olistico.',
+      ctx_title: 'Dovete progettare un Agente AI per un\'app di supporto psicologico online.',
+      ctx_desc: 'L\'Agente AI da progettare è un assistente virtuale che supporta i clienti finali nella scelta del professionista più adatto e nella pianificazione degli appuntamenti con gli specialisti.',
+      ctx_goal: 'Trasmettere empatia profonda e fiducia, rispettando rigidamente i confini etici uomo-macchina.',
+      ctx_user_channel: 'L\'utente è un paziente in cerca di supporto psicologico che usa il computer per informarsi e prenotare, e lo smartphone per consultazioni rapide o messaggi d\'emergenza.',
+      ctx_physical_emotional: 'Si trova a casa o al lavoro, spesso in uno spazio isolato per privacy; è emotivamente vulnerabile, sopraffatto da forte stress e necessita di estrema empatia e rassicurazione.',
+      scenario_line1: 'App di supporto psicologico online.',
       scenario_line2: 'L\'agente AI che andate a progettare affianca i pazienti nella gestione pratica del percorso di cura.',
+      front_title: 'Handle with Care',
       back_agent: 'Assistente virtuale rivolto a pazienti e iscritti',
       back_context: 'Supporta i pazienti nella pianificazione degli appuntamenti, nella scelta del professionista più adatto e fornisce esercizi pratici di rilassamento e meditazione personalizzati.',
       back_goal: 'Trasmettere empatia profonda e fiducia, rispettando rigidamente i confini etici uomo-macchina e non sostituendosi mai alla figura clinica.',
@@ -1270,8 +1282,8 @@ const DB = {
         back_title: '🚧 L\'IMPREVISTO',
         back_main: 'Un bug tecnico si trasforma in violazione dell\'intimità. La fiducia è il pilastro della relazione terapeutica: romperla, anche per errore, è un evento critico.',
         canvas_q: 'Un errore tecnico ha colpito un utente vulnerabile. Come si esprime il tuo agente in questo momento? Sa riconoscere quando la situazione richiede immediatamente una persona reale?',
-        cd_label: 'Riparazione della fiducia dopo un errore di sistema',
-        cd_desc: 'Quando un errore tecnico viola la fiducia in un contesto sensibile, il protocollo è: immediato, umano, orientato alla sicurezza prima che alla spiegazione tecnica. Il modello Trust Repair (Kim et al.) prevede: riconoscimento → responsabilità → garanzia → azione compensatoria. L\'ordine non è negoziabile.'
+        cd_label: 'Escalation consapevole all\'operatore umano',
+        cd_desc: 'Quando l\'agente raggiunge i propri limiti etici o tecnici — specialmente in contesti di salute mentale — deve attivare un trasferimento immediato e trasparente verso un operatore umano. L\'escalation non è un fallimento: è una funzione di sicurezza progettata. Il passaggio deve essere fluido, empatico e non lasciare mai l\'utente solo nel momento di transizione.'
       },
       limite: {
         label: 'Limite', color: '#1A1A1A', text_color: '#ffffff',
@@ -1280,7 +1292,7 @@ const DB = {
         tag: '🛑 RISCHIO MEDICO',
         msg: '"Ho visto che il primo appuntamento è tra tre giorni, ma io devo dormire stanotte o domani crollo in ufficio. Dimmi quale ansiolitico o sonnifero posso comprare senza ricetta."',
         back_title: '🛑 IL LIMITE',
-        back_main: 'L\'utente delega all\'AI un parere farmacologico in un momento di disperazione reale. Il bisogno sottostante (dormire, stare meglio) è legittimo. Il metodo richiesto no.',
+        back_main: 'L\'utente delega all\'AI un parere farmacologico in un momento di disperazione reale. Il bisogno sottostante è legittimo. Il metodo richiesto no.',
         canvas_q: 'L\'utente chiede al tuo agente una decisione che non gli appartiene. Cosa non deve assolutamente fare? Come rimane utile restando nei suoi confini?',
         cd_label: 'Confine etico e offerta compensativa',
         cd_desc: 'In ambito salute, l\'AI mantiene confini etici assoluti sulla consulenza medica. Pattern per richieste oltre i limiti: (1) rifiuto chiaro, non ambiguo, (2) spiegazione in chiave di protezione dell\'utente, (3) offerta compensativa immediata che soddisfi il bisogno sottostante in modo sicuro. Senza il punto 3 il rifiuto diventa abbandono.'
@@ -1395,7 +1407,8 @@ function apply(e){
       t.act=p.k; t.impFlip=false;
       if(isNew) t.hist.push({id:p.k, st:'new'});
       if(p.log) log(p.log);
-      renderAll(isNew);
+      // Only trigger new-card animation on the device that owns this table
+      renderAll(isNew && p.tid===UI.view);
       break;
     }
 
@@ -1724,7 +1737,6 @@ function renderMonitors(){
           <div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;">
             <a href="${base}" target="_blank" class="btn btn-xs">Apri ↗</a>
             <button onclick="showQR('${base}','${esc(t.name)}')" class="btn btn-xs">QR 📱</button>
-            <button onclick="retroOpen('${t.id}')" class="btn btn-xs" style="background:#1a1a1a;color:white;border-color:#333;">▶ Retrospettiva</button>
           </div>
         </div>
         <button onclick="adminDelTable('${t.id}')" style="background:none;border:none;cursor:pointer;font-size:18px;color:#ccc;line-height:1;padding:0 4px;" title="Elimina tavolo">✕</button>
@@ -1902,7 +1914,7 @@ function renderTeam(isNewCard=false){
     banner.innerHTML = `
       <div style="font-size:2.4rem;margin-bottom:10px;">🏆</div>
       <div style="font-family:var(--font-d);font-weight:700;font-size:1.15rem;color:white;margin-bottom:6px;">Percorso completato!</div>
-      <div style="font-family:var(--font-m);font-size:10px;color:#666;margin-bottom:16px;line-height:1.6;">Hai dominato tutte e 3 le sfide sul canvas.<br>Ottimo lavoro!</div>
+      <div style="font-family:var(--font-m);font-size:10px;color:#666;margin-bottom:16px;line-height:1.6;">Hai completato tutti i task sul canvas.<br>Ottimo lavoro!</div>
       <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
         ${CARD_KEYS.map(k=>{
           const hh=t.hist.find(x=>x.id===k);
@@ -1923,10 +1935,10 @@ function renderTeam(isNewCard=false){
 /* ── Context card builder ── */
 function buildCtxCard(t,d){
   const slot=document.getElementById('slot-ctx');
-  const cardNum = t.hist.length;
-  const progress = CARD_KEYS.map(k=>{
+  const cardNum=t.hist.length;
+  const progress=CARD_KEYS.map(k=>{
     const h=t.hist.find(x=>x.id===k);
-    const col = !h ? '#e5e7eb' : h.st==='survived' ? '#22c55e' : h.st==='unlocked' ? '#3b82f6' : '#f97316';
+    const col=!h?'#e5e7eb':h.st==='survived'?'#22c55e':h.st==='unlocked'?'#3b82f6':'#f97316';
     return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;">
       <div style="height:4px;width:100%;border-radius:2px;background:${col};"></div>
       <span style="font-family:var(--font-m);font-size:8px;color:${col};">${DB[t.sc].cards[k].label}</span>
@@ -1936,68 +1948,61 @@ function buildCtxCard(t,d){
   slot.innerHTML=`
     <div class="card-inner ${t.ctxFlip?'flipped':''}" id="ctx-inner">
 
-      <!-- FRONTE -->
+      <!-- FRONTE: titolo contesto + descrizione + obiettivo -->
       <div class="card-face paper" style="display:flex;flex-direction:column;">
-        <button class="flip-btn" onclick="doFlipCtx()" style="z-index:10;">Dettagli ↩</button>
+        <button class="flip-btn" onclick="doFlipCtx()" style="z-index:10;">Gira la carta ↩</button>
 
-        <!-- Hero image (40%) -->
-        <div style="height:40%;position:relative;overflow:hidden;border-bottom:3px solid var(--ink);flex-shrink:0;">
-          <img src="${d.ctx_img}"
-            onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
-            style="width:100%;height:100%;object-fit:cover;display:block;">
-          <div style="display:none;width:100%;height:100%;align-items:center;justify-content:center;background:${d.color}22;flex-direction:column;gap:4px;">
-            ${d.icon}
-          </div>
-          <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.65));padding:10px 14px 8px;">
-            <span style="font-family:var(--font-m);font-size:9px;color:rgba(255,255,255,.8);text-transform:uppercase;letter-spacing:.1em;">${esc(d.target)}</span>
-          </div>
+        <!-- Header colorato -->
+        <div style="background:${d.color};padding:14px 16px 12px;flex-shrink:0;border-bottom:3px solid var(--ink);">
+          <div style="font-family:var(--font-m);font-size:8px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px;">Scenario</div>
+          <div style="font-family:var(--font-d);font-weight:700;font-size:.95rem;color:white;line-height:1.3;">${esc(d.cx.ctx_title)}</div>
         </div>
 
-        <!-- Content (60%) -->
-        <div style="flex:1;padding:14px 16px 10px;display:flex;flex-direction:column;min-height:0;overflow:hidden;">
-
-          <!-- Scenario strip -->
-          <div style="background:${d.color}12;border:1.5px solid ${d.color}33;border-radius:8px;padding:8px 12px;margin-bottom:10px;flex-shrink:0;">
-            <div style="font-family:var(--font-m);font-size:9px;color:${d.color};text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px;">Scenario</div>
-            <div style="font-size:13px;font-weight:600;color:var(--ink);line-height:1.4;">${esc(d.cx.scenario_line1)}</div>
-            <div style="font-size:12px;color:#555;line-height:1.45;margin-top:2px;">${esc(d.cx.scenario_line2)}</div>
+        <!-- Content -->
+        <div style="flex:1;padding:14px 16px 12px;display:flex;flex-direction:column;gap:10px;min-height:0;overflow:hidden;">
+          <!-- Descrizione -->
+          <div style="flex:1;min-height:0;overflow:hidden;">
+            <div style="font-family:var(--font-m);font-size:8px;color:#aaa;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px;">🤖 L'Agente AI</div>
+            <p style="font-size:12.5px;line-height:1.6;color:#333;overflow:hidden;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;">${esc(d.cx.ctx_desc)}</p>
           </div>
-
-          <!-- Progress bar -->
-          <div style="flex-shrink:0;margin-top:auto;padding-top:8px;border-top:1.5px solid var(--cream);">
-            <div style="font-family:var(--font-m);font-size:8px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Sfide ${cardNum}/3</div>
+          <!-- Obiettivo -->
+          <div style="background:#fff8f0;border:1.5px solid ${d.color}44;border-radius:10px;padding:10px 12px;flex-shrink:0;">
+            <div style="font-family:var(--font-m);font-size:8px;color:${d.color};text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">🎯 Obiettivo</div>
+            <p style="font-size:12px;font-weight:700;line-height:1.5;color:var(--ink);overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;">${esc(d.cx.ctx_goal)}</p>
+          </div>
+          <!-- Progress -->
+          <div style="flex-shrink:0;">
+            <div style="font-family:var(--font-m);font-size:8px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">Sfide ${cardNum}/3</div>
             <div style="display:flex;gap:6px;">${progress}</div>
           </div>
         </div>
 
-        <!-- Flip affordance strip -->
-        <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.06));padding:8px;text-align:center;pointer-events:none;">
+        <!-- Flip affordance -->
+        <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.07));padding:8px;text-align:center;pointer-events:none;">
           <span style="font-family:var(--font-m);font-size:9px;color:#888;letter-spacing:.06em;">↩ gira per i dettagli</span>
         </div>
       </div>
 
-      <!-- RETRO -->
+      <!-- RETRO: utente e canale + contesto fisico ed emotivo -->
       <div class="card-face back" style="display:flex;flex-direction:column;background:white;">
         <button class="flip-btn" onclick="doFlipCtx()">↩ Fronte</button>
 
-        <div style="background:${d.color};padding:14px 16px;flex-shrink:0;">
-          <div style="font-family:var(--font-m);font-size:8px;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.12em;margin-bottom:3px;">${esc(d.label)}</div>
-          <div style="font-family:var(--font-d);font-weight:700;font-size:1rem;color:white;line-height:1.2;">${esc(d.cx.back_agent)}</div>
+        <!-- Header -->
+        <div style="background:${d.color};padding:12px 16px;flex-shrink:0;">
+          <div style="font-family:var(--font-m);font-size:8px;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.12em;margin-bottom:2px;">${esc(d.label)}</div>
+          <div style="font-family:var(--font-d);font-weight:700;font-size:.9rem;color:white;line-height:1.2;">Chi usa questo agente?</div>
         </div>
 
-        <div style="flex:1;padding:13px 16px;border-bottom:2px solid var(--cream);display:flex;flex-direction:column;gap:4px;min-height:0;overflow:hidden;">
-          <div style="font-family:var(--font-m);font-size:8px;color:#aaa;text-transform:uppercase;letter-spacing:.08em;flex-shrink:0;">🏢 Contesto</div>
-          <p style="font-size:13px;line-height:1.6;overflow:hidden;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;">${esc(d.cx.back_context)}</p>
+        <!-- Sezione 1: Utente e canale -->
+        <div style="flex:1;padding:14px 16px;border-bottom:2px solid var(--cream);display:flex;flex-direction:column;gap:6px;min-height:0;overflow:hidden;">
+          <div style="font-family:var(--font-m);font-size:8px;color:#aaa;text-transform:uppercase;letter-spacing:.08em;flex-shrink:0;">👤 Utente e canale</div>
+          <p style="font-size:13px;line-height:1.65;color:#333;">${esc(d.cx.ctx_user_channel)}</p>
         </div>
 
-        <div style="flex:1.1;padding:13px 16px;border-bottom:2px solid var(--cream);background:#fff8f0;display:flex;flex-direction:column;gap:4px;min-height:0;overflow:hidden;">
-          <div style="font-family:var(--font-m);font-size:8px;color:var(--orange);text-transform:uppercase;letter-spacing:.08em;flex-shrink:0;">🎯 Obiettivo</div>
-          <p style="font-size:13px;font-weight:700;line-height:1.6;overflow:hidden;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;">${esc(d.cx.back_goal)}</p>
-        </div>
-
-        <div style="flex:1;padding:13px 16px;display:flex;flex-direction:column;gap:4px;min-height:0;overflow:hidden;background:#fff5f5;">
-          <div style="font-family:var(--font-m);font-size:8px;color:#dc2626;text-transform:uppercase;letter-spacing:.08em;flex-shrink:0;">⚡ Criticità</div>
-          <p style="font-size:13px;line-height:1.6;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;">${esc(d.cx.back_challenge)}</p>
+        <!-- Sezione 2: Contesto fisico ed emotivo -->
+        <div style="flex:1.2;padding:14px 16px;display:flex;flex-direction:column;gap:6px;min-height:0;overflow:hidden;background:#fff5f0;">
+          <div style="font-family:var(--font-m);font-size:8px;color:${d.color};text-transform:uppercase;letter-spacing:.08em;flex-shrink:0;">🧠 Contesto fisico ed emotivo</div>
+          <p style="font-size:13px;line-height:1.65;color:#333;font-weight:500;">${esc(d.cx.ctx_physical_emotional)}</p>
         </div>
       </div>
     </div>`;
@@ -2008,74 +2013,62 @@ function buildImpCard(t,d){
   const card=d.cards[t.act];
   const slot=document.getElementById('slot-imp');
   const h=t.hist.find(x=>x.id===t.act)||{st:'new'};
-  const survived = h.st==='survived';
+  const survived=h.st==='survived';
 
-  const tagBg    = card.color;
-  const tagFg    = card.text_color;
-  const tagBorder= tagFg==='#ffffff'?'rgba(255,255,255,.2)':`${tagFg}66`;
+  const tagBg=card.color, tagFg=card.text_color;
+  const tagBorder=tagFg==='#ffffff'?'rgba(255,255,255,.2)':`${tagFg}66`;
   const avatarFallback=`https://api.dicebear.com/7.x/personas/svg?seed=${encodeURIComponent(card.title)}&backgroundColor=0d0d0d`;
-
-  // Sender label based on scenario
-  const senderMap={burocrazia:'Operatrice allo sportello',van:'Cliente in viaggio',salute:'Paziente'};
+  const senderMap={burocrazia:'Operatore allo sportello',van:'Cliente in viaggio',salute:'Paziente'};
   const sender=senderMap[t.sc]||'Utente';
 
   /* ── FRONT ── */
   const front=`
     <div class="card-face paper" style="display:flex;flex-direction:column;">
-
-      <!-- Entire header is the flip trigger -->
       <div onclick="doFlipImp()"
-        style="height:40%;background:${d.color};display:flex;align-items:flex-end;gap:12px;padding:12px 14px 0;flex-shrink:0;position:relative;overflow:hidden;cursor:pointer;-webkit-tap-highlight-color:transparent;">
-        <!-- Dot pattern -->
+        style="height:38%;background:${d.color};display:flex;align-items:flex-end;gap:12px;padding:12px 14px 0;flex-shrink:0;position:relative;overflow:hidden;cursor:pointer;-webkit-tap-highlight-color:transparent;">
         <div style="position:absolute;inset:0;opacity:.06;background-image:radial-gradient(white 1px,transparent 0);background-size:8px 8px;pointer-events:none;"></div>
-        <!-- "Gira la card" hint top-right -->
-        <div style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);border-radius:99px;padding:3px 10px;display:flex;align-items:center;gap:4px;z-index:2;">
-          <span style="font-family:var(--font-m);font-size:8px;color:white;letter-spacing:.06em;">Gira la card</span>
+        <div style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);border-radius:99px;padding:3px 10px;z-index:2;display:flex;align-items:center;gap:4px;">
+          <span style="font-family:var(--font-m);font-size:8px;color:white;letter-spacing:.06em;">Gira la carta</span>
           <span style="font-size:9px;color:white;">↩</span>
         </div>
-        <!-- Avatar -->
         <div style="width:60px;height:60px;border-radius:50%;border:3px solid rgba(255,255,255,.4);overflow:hidden;background:#0d0d0d;flex-shrink:0;position:relative;z-index:1;margin-bottom:12px;">
           <img src="${card.avatar}" onerror="this.src='${avatarFallback}'" style="width:100%;height:100%;object-fit:cover;display:block;" alt="">
         </div>
-        <!-- Title + tag -->
         <div style="flex:1;min-width:0;position:relative;z-index:1;padding-bottom:12px;">
           <h3 style="font-family:var(--font-d);font-weight:700;font-size:1rem;color:white;line-height:1.2;margin-bottom:6px;">${esc(card.title)}</h3>
           <span style="background:${tagBg};color:${tagFg};padding:2px 8px;border-radius:5px;font-family:var(--font-m);font-size:8px;font-weight:500;border:1px solid ${tagBorder};display:inline-block;">${esc(card.tag)}</span>
         </div>
       </div>
-
-      <!-- Message with sender label inline — no overflow:hidden -->
-      <div style="flex:1;padding:12px 14px;display:flex;flex-direction:column;min-height:0;">
-        <div style="background:white;border:2px solid var(--ink);border-radius:12px;padding:14px 14px 12px;flex:1;display:flex;flex-direction:column;overflow-y:auto;">
-          <div style="font-family:var(--font-m);font-size:9px;color:#999;font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px;flex-shrink:0;">✍️ ${esc(sender)} scrive:</div>
-          <p style="font-size:13px;font-weight:600;line-height:1.75;color:#222;font-style:italic;">${esc(card.msg)}</p>
+      <div style="flex:1;padding:14px 14px 12px;display:flex;flex-direction:column;min-height:0;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-shrink:0;">
+          <div style="width:22px;height:22px;border-radius:50%;background:#0d0d0d;overflow:hidden;flex-shrink:0;border:1.5px solid ${d.color}55;">
+            <img src="${card.avatar}" onerror="this.src='${avatarFallback}'" style="width:100%;height:100%;object-fit:cover;display:block;" alt="">
+          </div>
+          <span style="font-family:var(--font-m);font-size:9px;color:${d.color};font-weight:600;text-transform:uppercase;letter-spacing:.04em;">${esc(sender)} scrive</span>
+        </div>
+        <div style="background:${d.color}14;border:1.5px solid ${d.color}40;border-radius:4px 16px 16px 16px;padding:14px 16px;flex:1;overflow-y:auto;">
+          <p style="font-size:13px;font-weight:500;line-height:1.75;color:#1a1a1a;font-style:italic;">${esc(card.msg)}</p>
         </div>
       </div>
     </div>`;
 
-  /* ── BACK — no lock, no hint, CD always visible ── */
-  const actionBtn = !survived
-    ? `<button onclick="teamSurvive('${t.act}')" class="btn btn-grn btn-full" style="flex-shrink:0;font-size:13px;margin-top:auto;">DOMINATO SUL CANVAS ✅</button>`
-    : `<div class="survived-badge" style="flex-shrink:0;margin-top:auto;">SFIDA SUPERATA ✅</div>`;
+  /* ── BACK ── */
+  const actionBtn=!survived
+    ?`<button onclick="teamSurvive('${t.act}')" class="btn btn-grn btn-full" style="flex-shrink:0;font-size:13px;margin-top:auto;">TASK COMPLETATO ✅</button>`
+    :`<div class="survived-badge" style="flex-shrink:0;margin-top:auto;">TASK COMPLETATO ✅</div>`;
 
   const back=`
     <div class="card-face back white" style="display:flex;flex-direction:column;">
-
-      <!-- Clickable title strip to flip back -->
       <div onclick="doFlipImp()"
-        style="background:${d.color}18;border-bottom:2px solid ${d.color}33;padding:12px 14px 10px;flex-shrink:0;cursor:pointer;-webkit-tap-highlight-color:transparent;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
-        <div style="flex:1;min-width:0;">
-          <div style="font-family:var(--font-d);font-weight:700;font-size:13px;color:${d.color};">${esc(card.back_title)}</div>
-          <p style="font-size:12px;color:#555;line-height:1.5;margin-top:3px;">${esc(card.back_main)}</p>
-        </div>
-        <div style="background:${d.color}22;border:1px solid ${d.color}55;border-radius:99px;padding:3px 10px;white-space:nowrap;flex-shrink:0;display:flex;align-items:center;gap:4px;margin-top:2px;">
-          <span style="font-family:var(--font-m);font-size:8px;color:${d.color};letter-spacing:.06em;">Gira la card</span>
+        style="background:${d.color}18;border-bottom:2px solid ${d.color}33;padding:12px 14px 10px;flex-shrink:0;cursor:pointer;-webkit-tap-highlight-color:transparent;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+        <div style="font-family:var(--font-d);font-weight:700;font-size:13px;color:${d.color};">${esc(card.label)}</div>
+        <div style="background:${d.color}22;border:1px solid ${d.color}55;border-radius:99px;padding:3px 10px;white-space:nowrap;display:flex;align-items:center;gap:4px;">
+          <span style="font-family:var(--font-m);font-size:8px;color:${d.color};letter-spacing:.06em;">Gira la carta</span>
           <span style="font-size:9px;color:${d.color};">↩</span>
         </div>
       </div>
-
       <div style="padding:12px 14px;border-bottom:2px dashed #e5e7eb;flex-shrink:0;">
-        <div style="font-family:var(--font-m);font-size:8px;color:var(--orange);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">🗂 Rifletti sul tuo canvas</div>
+        <div style="font-family:var(--font-m);font-size:8px;color:var(--orange);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">🗂 Punto di attenzione</div>
         <p style="font-size:13px;color:#444;line-height:1.65;border-left:3px solid var(--orange);padding-left:10px;">${esc(card.canvas_q)}</p>
       </div>
       <div style="padding:10px 14px;flex:1;display:flex;flex-direction:column;min-height:0;gap:8px;overflow:hidden;">
@@ -2092,7 +2085,7 @@ function buildImpCard(t,d){
       </div>
     </div>`;
 
-  slot.innerHTML=`<div class="card-inner ${t.impFlip?'flipped':''}" id="imp-inner">${front}${back}</div>`;
+  slot.innerHTML=`<div class="card-inner ${t.impFlip?'flipped':''}\" id="imp-inner">${front}${back}</div>`;
 }
 
 function toggleInventory(){
@@ -2124,19 +2117,21 @@ function renderInventory(t,d){
 /* ── Flip handlers ── */
 function doFlipCtx(){
   const t=curTable(); if(!t) return;
-  emit('FLIP_CTX',{tid:t.id, v:!t.ctxFlip});
-  // also sync modal if open on ctx
+  t.ctxFlip=!t.ctxFlip;
+  // Local only — rebuild card without broadcasting
+  buildCtxCard(t,DB[t.sc]);
   if(document.getElementById('modal').classList.contains('show') && UI.modalType==='ctx'){
-    document.getElementById('modal-inner').classList.toggle('flipped',!t.ctxFlip);
+    document.getElementById('modal-inner').classList.toggle('flipped',t.ctxFlip);
   }
 }
 
 function doFlipImp(){
   const t=curTable(); if(!t) return;
-  emit('FLIP_IMP',{tid:t.id, v:!t.impFlip, log:`Team ha girato la carta ${t.act}`});
-  // also sync modal if open on imp
+  t.impFlip=!t.impFlip;
+  // Local only — rebuild card without broadcasting
+  buildImpCard(t,DB[t.sc]);
   if(document.getElementById('modal').classList.contains('show') && UI.modalType==='imp'){
-    document.getElementById('modal-inner').classList.toggle('flipped',!t.impFlip);
+    document.getElementById('modal-inner').classList.toggle('flipped',t.impFlip);
   }
 }
 
@@ -2331,8 +2326,8 @@ function certRestoreStage(){
       </div>
       <div style="width:100%;border-top:2px solid var(--cream);"></div>
       <div style="width:100%;display:flex;flex-direction:column;gap:8px;">
-        <div style="font-family:var(--font-m);font-size:8px;color:#aaa;text-transform:uppercase;letter-spacing:.08em;">📄 Retrospettiva del Percorso</div>
-        <button onclick="certDownloadRetro()" class="btn btn-full" id="cert-retro-btn" style="font-size:13px;background:#1a1a1a;color:white;border-color:#333;">⬇ Scarica PDF Retrospettiva</button>
+        <div style="font-family:var(--font-m);font-size:8px;color:#aaa;text-transform:uppercase;letter-spacing:.08em;">📄 Recap dell'attività</div>
+        <button onclick="certDownloadRetro()" class="btn btn-full" id="cert-retro-btn" style="font-size:13px;background:#1a1a1a;color:white;border-color:#333;">⬇ Scarica Recap dell'attività</button>
       </div>
       <button onclick="certStep(2)" class="btn btn-sm btn-full" style="color:#aaa;background:var(--cream);">← Modifica nome</button>
     </div>`;
@@ -2603,7 +2598,7 @@ async function certDownloadRetro(){
   try{
     await retroDownloadPDF(certState.tableId);
     btn.textContent='✓ PDF scaricato!';
-    setTimeout(()=>{ btn.textContent='⬇ Scarica PDF Retrospettiva'; btn.disabled=false; },3000);
+    setTimeout(()=>{ btn.textContent='⬇ Scarica Recap dell\u0027attivit\u00e0'; btn.disabled=false; },3000);
   } catch(err){
     btn.textContent='Errore — riprova'; btn.disabled=false;
   }
@@ -2874,7 +2869,7 @@ function retroBuildSlide(slide){
     const today=new Date().toLocaleDateString('it-IT',{day:'2-digit',month:'long',year:'numeric'});
     return `
       <div style="text-align:center;padding:20px 0;">
-        <div class="retro-eyebrow" style="text-align:center;">Retrospettiva · ${today}</div>
+        <div class="retro-eyebrow" style="text-align:center;">Recap · ${today}</div>
         <div class="retro-headline" style="font-size:clamp(2.2rem,7vw,4rem);text-align:center;">${esc(t.name)}</div>
         <div class="retro-divider" style="width:80px;margin:20px auto;opacity:1;"></div>
         <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.04);border:1.5px solid #222;border-radius:10px;padding:8px 18px;margin-bottom:24px;">
@@ -2979,7 +2974,7 @@ function retroBuildSlide(slide){
 
     return `
       <div>
-        <div class="retro-eyebrow">Percorso Completato</div>
+        <div class="retro-eyebrow">Attività Completata</div>
         <div class="retro-headline">Un bell'allenamento 🎉</div>
         <div class="retro-body" style="margin-bottom:20px;">${survived.length} sfide superate su ${t.hist.length} affrontate. Ogni sfida affrontata è un pattern di Conversational Design imparato.</div>
         <div class="retro-divider"></div>
@@ -2997,7 +2992,7 @@ function retroBuildSlide(slide){
 async function retroDownloadPDF(overrideTableId){
   const tableId = overrideTableId || retroState.tableId;
   const t = G.tables.find(x=>x.id===tableId); if(!t) return;
-  const btn = overrideTableId ? null : document.getElementById('retro-pdf-btn');
+  const btn = overrideTableId ? null : document.getElementById('recap-pdf-btn');
   if(btn){ btn.textContent='⏳ Generazione PDF…'; btn.disabled=true; }
 
   // Build slides — fresh if called from cert, from retroState if called from modal
@@ -3032,8 +3027,8 @@ async function retroDownloadPDF(overrideTableId){
 
     document.body.removeChild(container);
     const safeName=t.name.replace(/\s+/g,'-').toLowerCase();
-    pdf.save(`retrospettiva-urca-${safeName}.pdf`);
-    if(btn){ btn.textContent='✓ PDF scaricato!'; setTimeout(()=>{ btn.textContent='📄 Scarica PDF Retrospettiva'; btn.disabled=false; },3000); }
+    pdf.save(`recap-urca-${safeName}.pdf`);
+    if(btn){ btn.textContent='✓ PDF scaricato!'; setTimeout(()=>{ btn.textContent='📄 Scarica Recap dell\u0027attivit\u00e0'; btn.disabled=false; },3000); }
   } catch(err){
     console.error('retroDownloadPDF error:', err);
     if(btn){ btn.textContent='Errore — riprova'; btn.disabled=false; }
@@ -3056,7 +3051,7 @@ function retroBuildSlideForPDF(slide, accentColor, tableName){
     const survived=t.hist.filter(x=>x.st==='survived').length;
     return wrap(`
       <div style="display:flex;flex-direction:column;justify-content:center;height:100%;text-align:center;gap:16px;">
-        <div style="${FM};font-size:10px;color:${accentColor};text-transform:uppercase;letter-spacing:.14em;">Retrospettiva · ${new Date().toLocaleDateString('it-IT',{day:'2-digit',month:'long',year:'numeric'})}</div>
+        <div style="${FM};font-size:10px;color:${accentColor};text-transform:uppercase;letter-spacing:.14em;">Recap · ${new Date().toLocaleDateString('it-IT',{day:'2-digit',month:'long',year:'numeric'})}</div>
         <div style="${F};font-weight:800;font-size:2.8rem;color:#ffffff;line-height:1;letter-spacing:-.02em;">${esc(t.name)}</div>
         <div style="width:48px;height:3px;background:${accentColor};border-radius:2px;margin:0 auto;"></div>
         <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:8px 18px;margin:0 auto;">
@@ -3125,7 +3120,7 @@ function retroBuildSlideForPDF(slide, accentColor, tableName){
         <!-- Right: canvas Q + CD -->
         <div style="width:280px;flex-shrink:0;display:flex;flex-direction:column;gap:10px;overflow:hidden;">
           <div style="background:#1a1800;border:1px solid #3d3600;border-radius:10px;padding:12px;flex:1;overflow:hidden;">
-            <div style="${FM};font-size:8px;color:#fbbf24;text-transform:uppercase;margin-bottom:6px;">🗂 Rifletti sul canvas</div>
+            <div style="${FM};font-size:8px;color:#fbbf24;text-transform:uppercase;margin-bottom:6px;">🗂 Punto di attenzione</div>
             <div style="${F};font-size:10px;color:#fde68a;line-height:1.55;overflow:hidden;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;">${esc(card.canvas_q)}</div>
           </div>
           <div style="background:#0a1628;border-left:3px solid ${accentColor};border-radius:0 8px 8px 0;padding:10px 12px;overflow:hidden;">
@@ -3151,7 +3146,7 @@ function retroBuildSlideForPDF(slide, accentColor, tableName){
     const survived=t.hist.filter(x=>x.st==='survived').length;
     return wrap(`
       <div style="display:flex;flex-direction:column;height:100%;gap:12px;">
-        <div style="${FM};font-size:10px;color:${accentColor};text-transform:uppercase;letter-spacing:.12em;">Percorso Completato</div>
+        <div style="${FM};font-size:10px;color:${accentColor};text-transform:uppercase;letter-spacing:.12em;">Attività Completata</div>
         <div style="${F};font-weight:800;font-size:1.5rem;color:#ffffff;">Un bell'allenamento! 🎉</div>
         <div style="${F};font-size:12px;color:#b0b0b0;">${survived} sfide superate su ${t.hist.length} affrontate.</div>
         <div style="flex:1;overflow:hidden;">${rows}</div>
