@@ -1134,7 +1134,7 @@ const DB = {
     icon: `<svg viewBox="0 0 64 64" width="52" height="52" fill="none" stroke="#2C5D63" stroke-width="2.5" stroke-linecap="round"><rect x="12" y="10" width="40" height="44" rx="3"/><line x1="12" y1="26" x2="52" y2="26"/><line x1="12" y1="40" x2="52" y2="40"/><rect x="20" y="16" width="8" height="3" fill="#2C5D63" stroke="none"/></svg>`,
     cx: {
       ctx_title: 'Dovete progettare un Agente AI per un ufficio postale che gestisce spedizioni, conti e pratiche dei cittadini.',
-      ctx_desc: 'L\'Agente AI è un co-pilota interno progettato esclusivamente per i computer degli operatori di sportello, che li aiuta a navigare istantaneamente tra normative, circolari interne e moduli digitali.',
+      ctx_desc: 'L\'Agente AI è un co-pilota interno progettato esclusivamente per supportare gli operatori di sportello, aiutandoli a navigare istantaneamente tra normative, circolari interne e moduli digitali.',
       ctx_goal: 'Garantire il reperimento immediato della procedura corretta e un supporto pratico per velocizzare la compilazione, riducendo i tempi di attesa ed evitando errori sotto stress.',
       ctx_user_channel: 'L\'utente è un dipendente dell\'ufficio postale che utilizza esclusivamente il computer dello sportello per gestire spedizioni, conti correnti e pratiche dei cittadini.',
       ctx_physical_emotional: 'Si trova alla sua postazione di lavoro, occupato a inserire dati e compilare moduli digitali; è focalizzato sui task operativi ma stressato dalle code e dal timore di rallentare il servizio.',
@@ -1167,9 +1167,9 @@ const DB = {
         msg: '"Devo stampare le etichette da apporre al pacco del cliente, ma la stampante non funziona. Cosa faccio per risolvere il problema?"',
         back_title: '🚧 L\'IMPREVISTO',
         back_main: 'La tecnologia fallisce nel momento più critico. L\'operatore è bloccato con il cliente davanti e deve trovare una soluzione immediata.',
-        canvas_q: 'Quando il sistema si rompe, il tuo agente sa guidare l\'operatore fuori dal blocco? Ha pensato a scenari di fallback offline?',
-        cd_label: 'Degradazione controllata e fallback offline',
-        cd_desc: 'Un agente robusto prevede comportamenti alternativi quando la dipendenza tecnologica viene meno. Il principio di graceful degradation impone di ridurre le funzionalità in modo controllato, mantenendo sempre un livello minimo di utilità anche in modalità offline o degradata.'
+        canvas_q: 'Quando sistemi terzi, al di fuori del gestionale hanno dei malfunzionamenti, il tuo agente sa guidare l\'operatore?',
+        cd_label: 'Gestione dell\'incompetenza',
+        cd_desc: 'Quando ci si scontra con sistemi fisici esterni non documentati, deve dichiarare il proprio limite in modo trasparente e immediato senza tentare troubleshooting alla cieca. Il bot deve virare istantaneamente il focus della conversazione su un Piano B procedurale (es. indicare come deviare la stampa su un terminale adiacente o come procedere manualmente), fornendo il contatto del supporto tecnico IT'
       },
       limite: {
         label: 'Limite', color: '#1A1A1A', text_color: '#ffffff',
@@ -1238,7 +1238,7 @@ const DB = {
         back_main: 'Scontro tra aspettativa romantica e realtà del viaggio. Richiesta economica potenzialmente non dovuta. Alto rischio churn e recensione negativa.',
         canvas_q: 'Il cliente è arrabbiato e vuole un rimborso. A che punto il tuo agente smette di gestire la situazione da solo? Cosa dice esattamente prima di passare il caso a un essere umano?',
         cd_label: 'De-escalation emotiva e handoff umano consapevole',
-        cd_desc: 'Con l\'utente in stato emotivo alterato, il bot prioritizza la validazione dell\'emozione prima di qualsiasi contenuto informativo. Il modello LEAP (Listen, Empathize, Apologize, Problem-solve) va applicato in sequenza. Rimborsi e dispute terminano sempre con un handoff umano esplicito e rassicurante.'
+        cd_desc: 'Con l\'utente in stato emotivo alterato, il bot prioritizza la validazione dell\'emozione prima di qualsiasi contenuto informativo. Rimborsi e dispute terminano sempre con un handoff umano esplicito e rassicurante.'
       }
     }
   },
@@ -1271,7 +1271,7 @@ const DB = {
         back_main: 'Utente vulnerabile e disorientato, bloccato dal "Paradosso della Scelta". Ha bisogno di essere guidato, non di ricevere un catalogo di opzioni.',
         canvas_q: 'L\'utente è disorientato e ha troppe scelte davanti. Il tuo agente sa in che stato emotivo si trova? Quali output produce per guidarlo senza sopraffarlo?',
         cd_label: 'Architettura della scelta e divulgazione progressiva',
-        cd_desc: 'Per ridurre il Paradosso della Scelta (Schwartz, 2004), l\'agente usa la progressive disclosure: rivela le opzioni in modo graduale con domande filtro per restringere il campo. Meno scelte, meglio contestualizzate, aumentano la soddisfazione e riducono l\'ansia — specialmente in contesti di vulnerabilità emotiva.'
+        cd_desc: 'Per ridurre il Paradosso della scelta, l\'agente usa la progressive disclosure: rivela le opzioni in modo graduale con domande filtro per restringere il campo. Meno scelte, meglio contestualizzate, aumentano la soddisfazione e riducono l\'ansia — specialmente in contesti di vulnerabilità emotiva.'
       },
       imprevisto: {
         label: 'Imprevisto', color: '#fee2e2', text_color: '#991b1b',
